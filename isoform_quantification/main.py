@@ -133,8 +133,8 @@ def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_g
     Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(output_path+"/expression_gene.out",'w') as f_gene:
         with open(output_path+"/expression_isoform.out",'w') as f_isoform:
-            f_gene.write('Gene\tChr\tTPM\tFPKM\n')
-            f_isoform.write('Isoform\tGene\tChr\tStart\tEnd\tIsoform_length\tTPM\tFPKM\n')
+            f_gene.write('Gene\tChr\tTPM\n')
+            f_isoform.write('Isoform\tGene\tChr\tStart\tEnd\tIsoform_length\tTPM\n')
             for chr_name in short_read_gene_matrix_dict:
                 for gene_name in short_read_gene_matrix_dict[chr_name]:
                     tpm_sum = fpkm_sum = 0
@@ -147,16 +147,20 @@ def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_g
                         fpkm = gene_isoform_fpkm_expression_dict[chr_name][gene_name][isoform_index]
                         tpm_sum += tpm
                         fpkm_sum += fpkm
-                        f_isoform.write('%s\t%s\t%s\t%d\t%d\t%d\t%f\t%f\n'%(isoform_name,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,fpkm))
-                    f_gene.write('%s\t%s\t%f\t%f\n'%(gene_name,chr_name,tpm_sum,fpkm_sum))
-def normalize_expression(gene_isoform_expression_dict,total_num_reads,isoform_expression_sum):
+                        f_isoform.write('%s\t%s\t%s\t%d\t%d\t%d\t%f\n'%(isoform_name,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm))
+                        # f_isoform.write('%s\t%s\t%s\t%d\t%d\t%d\t%f\t%f\n'%(isoform_name,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,fpkm))
+                    f_gene.write('%s\t%s\t%f\n'%(gene_name,chr_name,tpm_sum))
+def normalize_expression(gene_isoform_expression_dict,total_num_reads):
     gene_isoform_tpm_expression_dict = defaultdict(dict)
     gene_isoform_fpkm_expression_dict = defaultdict(dict)
+    isoform_expression_sum = 0
+    for chr_name in gene_isoform_expression_dict:
+        for gene_name in gene_isoform_expression_dict[chr_name]:
+            isoform_expression_sum += gene_isoform_expression_dict[chr_name][gene_name].sum()
     for chr_name in gene_isoform_expression_dict:
         for gene_name in gene_isoform_expression_dict[chr_name]:
             gene_isoform_tpm_expression_dict[chr_name][gene_name] = gene_isoform_expression_dict[chr_name][gene_name] * 1e6 / isoform_expression_sum
             gene_isoform_fpkm_expression_dict[chr_name][gene_name] = gene_isoform_expression_dict[chr_name][gene_name] * 1e9 / total_num_reads
-            
     return gene_isoform_tpm_expression_dict,gene_isoform_fpkm_expression_dict
             
 def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,weight = 0.01,beta = 0.01,READ_LEN=79,READ_JUNC_MIN_MAP_LEN=10):
@@ -172,7 +176,6 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     chr_list = set(short_read_gene_matrix_dict.keys()).intersection(set(long_read_gene_matrix_dict.keys()))
     gene_isoform_expression_dict = defaultdict(dict)
     print('Calculating the isoform expression...')
-    isoform_expression_sum = 0
     for chr_name in chr_list:
         gene_list = set(short_read_gene_matrix_dict[chr_name].keys()).intersection(set(long_read_gene_matrix_dict[chr_name].keys()))
         for gene_name in gene_list:
@@ -186,10 +189,9 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
                                             short_read_gene_matrix_dict[chr_name][gene_name]['region_read_count_matrix'],
                                             long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'],
                                             long_read_gene_matrix_dict[chr_name][gene_name]['region_read_count_matrix'],isoform_lengths,weight,beta)
-                    isoform_expression_sum += sum(gene_isoform_expression_dict[chr_name][gene_name])
                 except ValueError as e:
                     print("Error encountered for gene %s chr %s:"%((chr_name,gene_name)) + e)
-    gene_isoform_tpm_expression_dict,gene_isoform_fpkm_expression_dict = normalize_expression(gene_isoform_expression_dict,num_SRs+num_LRs,isoform_expression_sum)
+    gene_isoform_tpm_expression_dict,gene_isoform_fpkm_expression_dict = normalize_expression(gene_isoform_expression_dict,num_SRs+num_LRs)
     generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,gene_isoform_fpkm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
     return short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,gene_isoform_fpkm_expression_dict
 def parse_arguments():
