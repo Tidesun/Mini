@@ -243,7 +243,7 @@ def map_read(line, gene_regions_read_count, gene_regions_points_list,
         #else:
             #print 'Warning: Gname %s, %s, was not mapped.' % (gname, rname)
             #print '         Read: ' + line
-    return mapping
+    return mapping,gene_regions_read_count
 ##########        
 def map_long_read_to_region(read_start_pos, read_len_list, points):
     region_name = ''
@@ -271,7 +271,7 @@ def map_long_read_to_region(read_start_pos, read_len_list, points):
         read_end_pos = read_start_pos + read_len_list[read_len_idx] - 1
         read_len_idx += 1
     
-def map_long_read(line, gene_regions_read_count, gene_regions_points_list, 
+def map_long_read(line, gene_regions_read_count, gene_regions_read_length,gene_regions_points_list, 
              start_pos_list, start_gname_list, end_pos_list, end_gname_list,
              READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST):
     mapping = {}
@@ -296,6 +296,8 @@ def map_long_read(line, gene_regions_read_count, gene_regions_points_list,
                 if (region_candidate.replace(":","-") in region_name) & (len(region_candidate) > len(sub_region_name)):
                     sub_region_name = region_candidate
             gene_regions_read_count[rname][gname][sub_region_name] += 1
+            # gene_regions_read_length[rname][gname][sub_region_name].append({'read_name':read_name,'read_length':sum(read_len_list)})
+            gene_regions_read_length[rname][gname][sub_region_name].append(sum(read_len_list))
             mapping['read_mapped'] = True
             mapping['mapping_area'].append({'gene_name':gname,'region_name':sub_region_name})
-    return mapping
+    return mapping,gene_regions_read_count,gene_regions_read_length
