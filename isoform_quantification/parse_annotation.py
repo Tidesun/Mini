@@ -182,7 +182,7 @@ def generate_exon_indicator_for_isoform_single_chr(raw_isoform_exons_dict,gene_e
     for gene_name in raw_isoform_exons_dict:
         isoforms_regions_len_dict[gene_name],gene_regions_dict[gene_name] = generate_exon_indicator_for_isoform_single_gene(raw_isoform_exons_dict[gene_name],gene_exons_dict[gene_name],gene_points_dict[gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN)
     return isoforms_regions_len_dict,gene_regions_dict
-def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_isoform_exons_dict,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
     isoforms_regions_len_dict,gene_regions_dict = {},{}
     for chr_name in raw_isoform_exons_dict:
         isoforms_regions_len_dict[chr_name],gene_regions_dict[chr_name] = {},{}
@@ -198,7 +198,7 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
     #         isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name] = result
     
     # Multi processing
-    executor = concurrent.futures.ProcessPoolExecutor()
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=threads)
     future_generate_exon_indicator = {executor.submit(generate_exon_indicator_for_isoform_single_chr, raw_isoform_exons_dict[chr_name],gene_exons_dict[chr_name],gene_points_dict[chr_name],READ_LEN,READ_JUNC_MIN_MAP_LEN): chr_name for chr_name in raw_isoform_exons_dict}
     for future in concurrent.futures.as_completed(future_generate_exon_indicator):
         chr_name = future_generate_exon_indicator[future]
@@ -236,7 +236,7 @@ def sanity_check_isoform_regions_length(gene_exons_dict, gene_regions_dict, gene
                             exit(1)
     return genes_regions_len_dict
 #######################
-def parse_annotation(ref_annotation_path,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
     #gene_points_dict store the index of the point value in ascending order for each gene
     file_read = open(ref_annotation_path, 'r')
     gene_exons_dict,gene_points_dict,gene_isoforms_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = {},{},{},{},{}
@@ -277,7 +277,7 @@ def parse_annotation(ref_annotation_path,READ_LEN,READ_JUNC_MIN_MAP_LEN):
                 gene_points_dict[chr_name][gene_name][start_pos] = point_index
                 gene_points_dict[chr_name][gene_name][end_pos] = point_index + 1
                 point_index += 2
-    isoforms_regions_len_dict,gene_regions_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,READ_LEN,READ_JUNC_MIN_MAP_LEN)
+    isoforms_regions_len_dict,gene_regions_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
     genes_regions_len_dict = sanity_check_isoform_regions_length(gene_exons_dict, gene_regions_dict, gene_isoforms_dict, 
                                         isoforms_regions_len_dict)
     file_read.close()

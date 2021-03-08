@@ -1,16 +1,12 @@
 from parse_annotation import parse_annotation
 from construct_feature_matrix import filter_multi_exons_regions
-import time
-def parse_reference_annotation(ref_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN):
-    print('Parsing the reference annotation...')
-    start = time.time()
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
     [_, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
-        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, READ_LEN, READ_JUNC_MIN_MAP_LEN)
+        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
     for chr_name in gene_regions_dict:
         for gene_name in gene_regions_dict[chr_name].copy():
             if len(filter_multi_exons_regions(gene_regions_dict[chr_name][gene_name])) == 0:
                 del gene_points_dict[chr_name][gene_name],gene_isoforms_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],raw_isoform_exons_dict[chr_name][gene_name]
-    print('Done in {}s !'.format(time.time()-start))
     return gene_points_dict,gene_isoforms_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict
 
 def process_annotation_for_alignment(gene_points_dict,gene_regions_dict):
