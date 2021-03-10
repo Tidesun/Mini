@@ -56,6 +56,6 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_regi
                 continue
                 raise Exception('Failed to on ' + line, tb)
     if (long_read):
-        return gene_regions_read_length,total_read_length,len(read_names)
+        return gene_regions_read_count,gene_regions_read_length,total_read_length,len(read_names)
     else:
         return gene_regions_read_count,len(read_names)

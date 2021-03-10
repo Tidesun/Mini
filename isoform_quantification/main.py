@@ -24,7 +24,7 @@ def parse_arguments():
     requiredNamed_TransELS.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
     
     optional_TransELS = parser_TransELS.add_argument_group('optional arguments')
-    optional_TransELS.add_argument('--b_cal_method',type=str,default='coverage', help="Region expression calculation method ['coverage','div_read_length']")
+    optional_TransELS.add_argument('--b_cal_method',type=str,default='coverage', help="Region expression calculation method ['coverage','div_read_length','original']")
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha")
     optional_TransELS.add_argument('--beta',type=str, default='adaptive',help="Beta")
     optional_TransELS.add_argument('--P',type=float, default=1e-6,help="P")
