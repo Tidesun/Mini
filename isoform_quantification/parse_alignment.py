@@ -61,7 +61,8 @@ def parse_read_line(line, READ_LEN):
                 if (M == 0):  # Mode is changed
                     read_len_list.append(seg_len)
                     seg_len = 0
-                seg_len += int(cigar_list[2 * idx])
+                else:
+                    seg_len += int(cigar_list[2 * idx])
             elif (cigar_list[2 * idx + 1] == 'I'):  # Insertion in reference
                 if (M == 0):  # Mode is changed
                     read_len_list.append(seg_len)
@@ -73,6 +74,7 @@ def parse_read_line(line, READ_LEN):
         
 #     if (abs(read_len - READ_LEN) > read_len_margin):
 #         read_len_list = []
+    read_len_list = [i for i in read_len_list if i!=0 ]
     return [read_name, read_start_pos, rname, read_len_list]
 ##########
 
@@ -88,7 +90,7 @@ def comp_read_len(read_len_list):
             read_len += i
         M = 1 - M
     if M == 1:
-        print('Warning: Invalid CIGAR format: ' + str(read_len_list)) 
+        raise Exception('Warning: Invalid CIGAR format: ' + str(read_len_list)) 
         
     return read_len
 ##########
@@ -159,12 +161,11 @@ def map_read_to_exon_region(read_start_pos, read_len_list, points):
 ###     And checks gene Pi points inside a read segmnet maps either to the start/end point if
 ###     they are next to a junction gap.
 ##########
-def map_read_to_junct_region(read_start_pos, read_len_list, points):
+def map_read_to_junct_region(read_start_pos, read_len_list, points,read_name):
     
     region_name = ''
     read_len_idx = 0
     read_end_pos = read_start_pos + read_len_list[read_len_idx] - 1
-    
     points_idx = 0
     read_len_idx += 1
 
@@ -189,7 +190,11 @@ def map_read_to_junct_region(read_start_pos, read_len_list, points):
                 if not (check_end_pos_in_exon_boundary(read_end_pos, points_idx, points)):
                     return ''
                 region_name = region_name[:-1]
-            return region_name
+                points = region_name.split('-')
+                new_region_name = 'P{}:{}:P{}'.format(int(points[0][1:])-1,region_name,int(points[-1][1:])+1)
+                return new_region_name
+            else:
+                return ''
         read_start_pos = read_end_pos + read_len_list[read_len_idx] + 1 
         read_len_idx += 1
         read_end_pos = read_start_pos + read_len_list[read_len_idx] - 1
@@ -197,15 +202,15 @@ def map_read_to_junct_region(read_start_pos, read_len_list, points):
                 
 ##########
 
-
 ### Map read to gene regions
 ##########
-def map_read(line, gene_regions_read_count, gene_regions_points_list, 
+def map_read(gene_regions_points_list,genes_regions_len_dict, 
              start_pos_list, start_gname_list, end_pos_list, end_gname_list,
-             READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST):
-    mapping = {}
-    [read_name, read_start_pos, rname, read_len_list] = parse_read_line(line, READ_LEN)
-    mapping = {'read_name':read_name,'read_start_pos':read_start_pos,'rname':rname,'read_len':read_len_list,'mapping_area':[],'read_mapped':False}
+             READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST,parsed_line):
+    # mapping = {}
+    mapping = {'read_mapped':False}
+    [read_name, read_start_pos, rname, read_len_list] = parsed_line
+    # mapping = {'read_name':read_name,'read_start_pos':read_start_pos,'rname':rname,'read_len':read_len_list,'mapping_area':[],'read_mapped':False}
     
     if (rname not in CHR_LIST):
         return mapping
@@ -219,7 +224,8 @@ def map_read(line, gene_regions_read_count, gene_regions_points_list,
     read_end_pos = read_start_pos  - 1
     for i in read_len_list:
         read_end_pos += i
-    
+    read_length = comp_read_len(read_len_list)
+    mapping['read_length'] = read_length
 
     gene_candidates = []
     start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos)
@@ -229,12 +235,11 @@ def map_read(line, gene_regions_read_count, gene_regions_points_list,
         points = gene_regions_points_list[rname][gname]
         region_name = map_read_to_exon_region(read_start_pos, read_len_list, points)
         if (region_name == ''):
-            region_name =  map_read_to_junct_region(read_start_pos, read_len_list, points)
+            region_name =  map_read_to_junct_region(read_start_pos, read_len_list, points,read_name)
         if (region_name != ''):
-            if (region_name in gene_regions_read_count[rname][gname]):
-                gene_regions_read_count[rname][gname][region_name] += 1
-                mapping['read_mapped'] = True
-                mapping['mapping_area'].append({'gene_name':gname,'region_name':region_name})
+            mapping['read_mapped'] = True
+            mapping['mapping_area'] = ({'chr_name':rname,'gene_name':gname,'region_name':region_name})
+            return mapping
                 #print 'Gname %s, %s, region %s mapped' % (rname, gname, region_name)
                 #print 'Read: ' + line
             #else:
@@ -243,7 +248,7 @@ def map_read(line, gene_regions_read_count, gene_regions_points_list,
         #else:
             #print 'Warning: Gname %s, %s, was not mapped.' % (gname, rname)
             #print '         Read: ' + line
-    return mapping,gene_regions_read_count
+    return mapping
 ##########        
 def map_long_read_to_region(read_start_pos, read_len_list, points):
     region_name = ''
@@ -271,17 +276,21 @@ def map_long_read_to_region(read_start_pos, read_len_list, points):
         read_end_pos = read_start_pos + read_len_list[read_len_idx] - 1
         read_len_idx += 1
     
-def map_long_read(line, gene_regions_read_count, gene_regions_read_length,gene_regions_points_list, 
+def map_long_read(parsed_line, gene_regions_read_count, gene_regions_read_length,gene_regions_points_list, 
              start_pos_list, start_gname_list, end_pos_list, end_gname_list,
              READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST):
     mapping = {}
-    [read_name, read_start_pos, rname, read_len_list] = parse_read_line(line, READ_LEN)
+    [read_name, read_start_pos, rname, read_len_list] = parsed_line
     mapping = {'read_name':read_name,'read_start_pos':read_start_pos,'rname':rname,'read_len':read_len_list,'mapping_area':[],'read_mapped':False}
-    
+    return mapping,gene_regions_read_count,gene_regions_read_length
     if (rname not in CHR_LIST):
-        return mapping
-    
-    read_end_pos = read_start_pos  - 1 + sum(read_len_list)
+        return mapping,gene_regions_read_count,gene_regions_read_length
+    try:
+        read_length = comp_read_len(read_len_list)
+    except:
+        print(read_name)
+        read_length = 150
+    read_end_pos = read_start_pos  - 1 + read_length
     
     gene_candidates = []
     start_index = bisect.bisect_right(end_pos_list[rname], read_start_pos)
@@ -289,15 +298,18 @@ def map_long_read(line, gene_regions_read_count, gene_regions_read_length,gene_r
     gene_candidates = (set(end_gname_list[rname][:end_index]) & set(start_gname_list[rname][start_index:])) 
     for gname in gene_candidates:
         points = gene_regions_points_list[rname][gname]
-        region_name = map_long_read_to_region(read_start_pos, read_len_list, points)
+        try:
+            region_name = map_long_read_to_region(read_start_pos, read_len_list, points)
+        except:
+            region_name = ''
         if (region_name != ''):
-            sub_region_name = ""
-            for region_candidate in gene_regions_read_count[rname][gname]:
-                if (region_candidate.replace(":","-") in region_name) & (len(region_candidate) > len(sub_region_name)):
-                    sub_region_name = region_candidate
+            sub_region_name = region_name
+            # for region_candidate in gene_regions_read_count[rname][gname]:
+            #     if (region_candidate.replace(":","-") in region_name) & (len(region_candidate) > len(sub_region_name)):
+            #         sub_region_name = region_candidate
             gene_regions_read_count[rname][gname][sub_region_name] += 1
-            # gene_regions_read_length[rname][gname][sub_region_name].append({'read_name':read_name,'read_length':sum(read_len_list)})
-            gene_regions_read_length[rname][gname][sub_region_name].append(sum(read_len_list))
+            # gene_regions_read_length[rname][gname][sub_region_name].append({'read_name':read_name,'read_length':read_length})
+            gene_regions_read_length[rname][gname][sub_region_name].append(read_length)
             mapping['read_mapped'] = True
             mapping['mapping_area'].append({'gene_name':gname,'region_name':sub_region_name})
     return mapping,gene_regions_read_count,gene_regions_read_length

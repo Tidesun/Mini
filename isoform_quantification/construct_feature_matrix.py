@@ -13,7 +13,7 @@ def construct_isoform_region_matrix(isoform_region_dict,region_names_indics,isof
             isoform_region_matrix[region_names_indics[region_name],isoform_names_indics[isoform_name]] = 1
     return isoform_region_matrix
 
-def construct_region_read_count_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,region_names_indics,num_LRs,total_long_read_lengths,region_expression_calculation_method):
+def construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,region_names_indics,num_LRs,total_long_read_lengths,region_expression_calculation_method):
     region_read_count_matrix = np.zeros((len(region_names_indics)))
     for region_name in region_read_count_dict:
         if (region_expression_calculation_method == 'coverage'):
@@ -21,20 +21,40 @@ def construct_region_read_count_matrix_long_read(region_read_length,region_read_
         elif (region_expression_calculation_method == 'div_read_length'):
             region_read_count_matrix[region_names_indics[region_name]] = sum(region_read_length[region_name]) / total_long_read_lengths
         elif (region_expression_calculation_method == 'original'):
-            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] / num_LRs
+            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name]
         else:
             raise Exception('Invalid region expression calculation option!')
     return region_read_count_matrix
-
-def construct_region_read_count_matrix_short_read(region_read_count_dict,region_len_dict,region_names_indics,num_SRs,region_expression_calculation_method):
+def check_region_type(region_name):
+    if ((region_name.count(':') == 2) and ('-' not in region_name)):
+        return 'two_exons'
+    elif ('-' in region_name and region_name.count(':') == 2):
+        return 'one_junction'
+    elif ((region_name.count(':') == 1) and ('-' not in region_name)):
+        return 'one_exon'
+    else:
+        return 'others'
+def calculate_eff_length(region_len_dict,SR_read_len):
+    region_eff_length_dict = {}
+    for region_name in region_len_dict:
+        region_len = region_len_dict[region_name]
+        if check_region_type(region_name) in ['two_exons','one_junction']:
+            region_eff_length = SR_read_len - 1
+        else:
+            region_eff_length = region_len - SR_read_len + 1 if SR_read_len < region_len else 1
+        region_eff_length_dict[region_name] = region_eff_length
+    return region_eff_length_dict
+def construct_region_abundance_matrix_short_read(region_read_count_dict,region_eff_length_dict,region_names_indics,num_SRs,region_expression_calculation_method):
     region_read_count_matrix = np.zeros((len(region_names_indics)))
     for region_name in region_read_count_dict:
         if (region_expression_calculation_method == 'coverage'):
-            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] * 100 / region_len_dict[region_name]
+            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] * 150 / region_len_dict[region_name]
         elif (region_expression_calculation_method == 'div_read_length'):
             region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] / num_SRs
         elif (region_expression_calculation_method == 'original'):
-            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] / (region_len_dict[region_name] * num_SRs)
+            # region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] / (region_len_dict[region_name] * num_SRs)
+            region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name] / region_eff_length_dict[region_name]
+            # region_read_count_matrix[region_names_indics[region_name]] = region_read_count_dict[region_name]
         else:
             raise Exception('Invalid region expression calculation option!')
     return region_read_count_matrix
@@ -89,13 +109,20 @@ def calculate_condition_number(region_isoform_dict,isoform_names):
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
                    'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics}
     return matrix_dict
-
-def filter_multi_exons_regions(regions_dict):
+def filter_regions(regions_dict,long_read = False):
     filtered_regions_dict = {}
     for region_name in regions_dict:
-        points = [int(p) for p in region_name.replace('P','').replace(':','-').split('-')]
-        if len(points) == 2 and points[1] - points[0] == 1:
-            filtered_regions_dict[region_name] = regions_dict[region_name]
+        try:
+            points = [int(p) for p in region_name.replace('P','').replace(':','-').split('-')]
+        except:
+            print(region_name)
+        if (not long_read):
+            if check_region_type(region_name) in ['two_exons','one_junction','one_exon']:
+                filtered_regions_dict[region_name] = regions_dict[region_name]
+        else:
+            if check_region_type(region_name) in ['two_exons','one_junction','others']:
+                filtered_regions_dict[region_name] = regions_dict[region_name]
+
     return filtered_regions_dict
 
 def calculate_all_condition_number(gene_isoforms_dict,gene_regions_dict,allow_multi_exons):
@@ -106,24 +133,29 @@ def calculate_all_condition_number(gene_isoforms_dict,gene_regions_dict,allow_mu
             isoform_names = gene_isoforms_dict[chr_name][gene_name]
             # for short read only allow exon and exon-exon junction
             if (not allow_multi_exons):
-                region_isoform_dict = filter_multi_exons_regions(gene_regions_dict[chr_name][gene_name])
+                region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=False)
             else:
-                region_isoform_dict = gene_regions_dict[chr_name][gene_name]
+                region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)
             gene_matrix_dict[chr_name][gene_name] = calculate_condition_number(region_isoform_dict,isoform_names)
     return gene_matrix_dict
-def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_region_len_dict,num_SRs,region_expression_calculation_method):
+def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,SR_read_len,gene_region_len_dict,num_SRs,region_expression_calculation_method):
     gene_matrix_dict = dict()
     for chr_name in gene_isoforms_dict:
         gene_matrix_dict[chr_name] = dict()
         for gene_name in gene_isoforms_dict[chr_name]:
             isoform_names = gene_isoforms_dict[chr_name][gene_name]
             # for short read only allow exon and exon-exon junction
-            region_isoform_dict = filter_multi_exons_regions(gene_regions_dict[chr_name][gene_name])
-            region_read_count_dict = filter_multi_exons_regions(gene_regions_read_count[chr_name][gene_name])
-            region_len_dict = filter_multi_exons_regions(gene_region_len_dict[chr_name][gene_name])
+            region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=False)
+            region_read_count_dict = filter_regions(gene_regions_read_count[chr_name][gene_name],long_read=False)
+            region_len_dict = filter_regions(gene_region_len_dict[chr_name][gene_name],long_read=False)
 
             matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names)
-            matrix_dict['region_read_count_matrix'] = construct_region_read_count_matrix_short_read(region_read_count_dict,region_len_dict,matrix_dict['region_names_indics'],num_SRs,region_expression_calculation_method)
+            matrix_dict['region_eff_length_dict'] = calculate_eff_length(region_len_dict,SR_read_len)
+            matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_short_read(region_read_count_dict,matrix_dict['region_eff_length_dict'],matrix_dict['region_names_indics'],num_SRs,region_expression_calculation_method)
+            num_SRs_mapped_gene = 0
+            for region in region_read_count_dict:
+                num_SRs_mapped_gene += region_read_count_dict[region]
+            matrix_dict['num_SRs_mapped_gene'] = num_SRs_mapped_gene
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
     return gene_matrix_dict
@@ -133,12 +165,13 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
         gene_matrix_dict[chr_name] = dict()
         for gene_name in gene_isoforms_dict[chr_name]:
             isoform_names = gene_isoforms_dict[chr_name][gene_name]
-            region_isoform_dict = gene_regions_dict[chr_name][gene_name]
-            region_read_length = gene_regions_read_length[chr_name][gene_name]
-            region_len_dict = gene_region_len_dict[chr_name][gene_name]
-            region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
+
+            region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)
+            region_read_count_dict = filter_regions(gene_regions_read_count[chr_name][gene_name],long_read=True)
+            region_len_dict = filter_regions(gene_region_len_dict[chr_name][gene_name],long_read=True)
+            region_read_length = filter_regions(gene_regions_read_length[chr_name][gene_name],long_read=True)
             matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names)
-            matrix_dict['region_read_count_matrix'] = construct_region_read_count_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,matrix_dict['region_names_indics'],num_LRs,total_long_read_length,region_expression_calculation_method)
+            matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,matrix_dict['region_names_indics'],num_LRs,total_long_read_length,region_expression_calculation_method)
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
     return gene_matrix_dict

@@ -24,7 +24,7 @@ def parse_arguments():
     requiredNamed_TransELS.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
     
     optional_TransELS = parser_TransELS.add_argument_group('optional arguments')
-    optional_TransELS.add_argument('--b_cal_method',type=str,default='coverage', help="Region expression calculation method ['coverage','div_read_length','original']")
+    optional_TransELS.add_argument('--b_cal_method',type=str,default='original', help="Region expression calculation method ['original','coverage','div_read_length']")
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha")
     optional_TransELS.add_argument('--beta',type=str, default='adaptive',help="Beta")
     optional_TransELS.add_argument('--P',type=float, default=1e-6,help="P")
@@ -36,7 +36,21 @@ def parse_arguments():
         TrEESR(args.gtf_annotation_path,args.output_path,args.threads)
     elif args.subparser_name == 'TransELS':
         print('Using TransELS')
-        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,args.b_cal_method,args.alpha,args.beta,args.P,args.threads)
+        if (args.alpha == 'adaptive'):
+            alpha = 'adaptive'
+        else:
+            try:
+                alpha = float(args.alpha)
+            except:
+                raise Exception('Alpha given is not numeric')
+        if (args.beta == 'adaptive'):
+            beta = 'adaptive'
+        else:
+            try:
+                beta = float(args.beta)
+            except:
+                raise Exception('Beta given is not numeric')
+        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,args.b_cal_method,alpha,beta,args.P,args.threads)
     else:
         parser.print_help()
 if __name__ == "__main__":
