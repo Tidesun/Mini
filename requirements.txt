@@ -1,2 +1,9 @@
-qpsolvers==1.4
+Cython==0.29.22
+dill==0.3.3
+intervaltree==3.1.0
+memory-profiler==0.58.0
 numpy==1.17.2
+psutil==5.8.0
+qpsolvers==1.4
+quadprog==0.1.8
+sortedcontainers==2.3.0
