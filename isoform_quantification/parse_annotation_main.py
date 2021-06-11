@@ -1,22 +1,140 @@
 from parse_annotation import parse_annotation
-from construct_feature_matrix import filter_regions
-def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
-    [_, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
-        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
+from collections import defaultdict
+def check_region_type(region_name):
+    if ((region_name.count(':') == 1) and ('-' not in region_name)):
+        return 'one_exon'
+    elif ((region_name.count(':') == 2) and ('-' not in region_name)):
+        return 'two_exons'
+    elif (region_name.count('-') == 1):
+        return 'one_junction'
+    elif ((region_name.count(':') > 2) and ('-' not in region_name)):
+        return 'exons'
+    else:
+        return 'junctions'
+def calculate_exon_min_read_mapped_length(exon_region_name,point_dict,exon_position):
+    assert '-' not in exon_region_name
+    points = exon_region_name.split(':')
+    if len(points) == 2:
+        return 1
+    if exon_position == 'left':
+        return point_dict[points[-1]] - point_dict[points[1]] + 1 + 1
+    elif exon_position == 'right':
+        return point_dict[points[-2]] - point_dict[points[0]] + 1 + 1
+    elif exon_position == 'center':
+        return point_dict[points[-2]] - point_dict[points[1]] + 2 + 1       
+def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None):
+    new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
+    new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
     for chr_name in gene_regions_dict:
-        for gene_name in gene_regions_dict[chr_name].copy():
-            if (len(filter_regions(gene_regions_dict[chr_name][gene_name],long_read=False)) == 0 or len(filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)) == 0):
-                del gene_points_dict[chr_name][gene_name],gene_isoforms_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],raw_isoform_exons_dict[chr_name][gene_name]
-    return gene_points_dict,gene_isoforms_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict
+        for gene_name in gene_regions_dict[chr_name]:
+            point_dict = {}
+            for coord in gene_points_dict[chr_name][gene_name]:
+                point_dict['P{}'.format(gene_points_dict[chr_name][gene_name][coord])] = int(coord)
+            for region_name in gene_regions_dict[chr_name][gene_name]:
+                is_region_valid = False
+                if (genes_regions_len_dict[chr_name][gene_name][region_name] > min_read_len):              
+                    if (max_read_len is not None):
+                        if check_region_type(region_name) in ['one_exon','two_exons']:
+                            is_region_valid = True
+                        elif check_region_type(region_name) == 'one_junction':
+                            exons = region_name.split('-')
+                            for i,exon in zip(range(len(exons)),exons):
+                                points = exon.split(':')
+                                if (i == 0):
+                                    first_exon_length = point_dict[points[-1]] - point_dict[points[0]] + 1
+                                elif i == len(exons) - 1:
+                                    last_exon_length = point_dict[points[-1]] - point_dict[points[0]] + 1
+                            if (first_exon_length > READ_JUNC_MIN_MAP_LEN) and (last_exon_length > READ_JUNC_MIN_MAP_LEN):
+                                if region_name.count(':') == 2:
+                                    is_region_valid = True
+                                else:
+                                    [exon_1,exon_2] = region_name.split('-')
+                                    if 2 * READ_JUNC_MIN_MAP_LEN - 2 + calculate_exon_min_read_mapped_length(exon_1,point_dict,exon_position='left') + calculate_exon_min_read_mapped_length(exon_2,point_dict,exon_position='right') <= max_read_len:
+                                        is_region_valid = True
+                        elif check_region_type(region_name) == 'exons':
+                            if calculate_exon_min_read_mapped_length(region_name,point_dict,exon_position='center') <= max_read_len:
+                                is_region_valid = True
+                        elif check_region_type(region_name) == 'junctions':
+                            exons = region_name.split('-')
+                            exon_length = 0
+                            for i,exon in zip(range(len(exons)),exons):
+                                points = exon.split(':')
+                                if (i == 0):
+                                    first_exon_length = point_dict[points[-1]] - point_dict[points[0]] + 1
+                                elif i == len(exons) - 1:
+                                    last_exon_length = point_dict[points[-1]] - point_dict[points[0]] + 1
+                                else:
+                                    exon_length += point_dict[points[-1]] - point_dict[points[0]] + 1
+                            if (first_exon_length > READ_JUNC_MIN_MAP_LEN) and (last_exon_length > READ_JUNC_MIN_MAP_LEN):
+                                if exon_length + 2 * READ_JUNC_MIN_MAP_LEN - 2 + calculate_exon_min_read_mapped_length(exons[0],point_dict,exon_position='left') + calculate_exon_min_read_mapped_length(exons[-1],point_dict,exon_position='right') <= max_read_len:
+                                    is_region_valid = True
+                    else:
+                        is_region_valid = True
+                if (is_region_valid):
+                    new_gene_regions_dict[chr_name][gene_name][region_name] = gene_regions_dict[chr_name][gene_name][region_name]
+                    new_genes_regions_len_dict[chr_name][gene_name][region_name] = genes_regions_len_dict[chr_name][gene_name][region_name]
+    return new_gene_regions_dict,new_genes_regions_len_dict
 
-def process_annotation_for_alignment(gene_points_dict,gene_regions_dict):
+def filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict,max_num_missing_exons=2):
+    new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
+    new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
+    for rname in gene_regions_dict:
+        for gname in gene_regions_dict[rname]:
+            total_num_exons = len(gene_exons_dict[rname][gname])
+            if total_num_exons <= max_num_missing_exons:
+                new_gene_regions_dict[rname][gname] = gene_regions_dict[rname][gname]
+                new_genes_regions_len_dict[rname][gname] = genes_regions_len_dict[rname][gname]
+            else:
+                max_num_exon_transcript = {}
+                for region_name in gene_regions_dict[rname][gname]:
+                    num_exons_in_region = region_name.count(':')
+                    for transcript in gene_regions_dict[rname][gname][region_name]:
+                        if transcript not in max_num_exon_transcript:
+                            max_num_exon_transcript[transcript] = num_exons_in_region
+                        else:
+                            max_num_exon_transcript[transcript] = max(num_exons_in_region,max_num_exon_transcript[transcript])
+                min_num_exons_transcript = total_num_exons - max_num_missing_exons
+                for transcript in max_num_exon_transcript:
+                    min_num_exons_transcript = min(min_num_exons_transcript,max_num_exon_transcript[transcript])
+                for region_name in gene_regions_dict[rname][gname]:
+                    num_exons_in_region = region_name.count(':')
+                    if num_exons_in_region >= min_num_exons_transcript:
+                        new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
+                        new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
+    return new_gene_regions_dict,new_genes_regions_len_dict
+
+
+
+                                
+                        
+
+
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+    [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
+        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
+    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150)
+    LR_gene_regions_dict,LR_genes_regions_len_dict = filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict)
+    for chr_name in gene_points_dict:
+        for gene_name in gene_points_dict[chr_name].copy():
+            if (len(SR_gene_regions_dict[chr_name][gene_name]) == 0 or len(LR_gene_regions_dict[chr_name][gene_name]) == 0):
+                for dic in [gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict]:
+                    if chr_name in dic and gene_name in dic[chr_name]:
+                        del dic[chr_name][gene_name]
+    return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict
+from intervaltree import IntervalTree
+def process_annotation_for_alignment(gene_exons_dict,gene_points_dict):
     print('Process the reference annotation for read_count...')
     # process the reference annotation for read_count TODO: a universal format
-    gene_regions_points_list,gene_range = dict(),dict()
+    gene_regions_points_list,gene_range,gene_interval_tree_dict = dict(),dict(),dict()
     for chr_name in gene_points_dict:
-        gene_regions_points_list[chr_name],gene_range[chr_name] = dict(),list()
+        gene_regions_points_list[chr_name],gene_range[chr_name],gene_interval_tree_dict[chr_name] = dict(),list(),dict()
         for gene_name in gene_points_dict[chr_name]:
             points = list(gene_points_dict[chr_name][gene_name].keys())
             gene_regions_points_list[chr_name][gene_name] = points
             gene_range[chr_name].append([gene_name,points[0],points[-1]])
-    return gene_regions_points_list,gene_range
+            gene_interval_tree_dict[chr_name][gene_name] = IntervalTree()
+            for [start_pos,end_pos,_] in gene_exons_dict[chr_name][gene_name]:
+                # Interval tree exclude end position
+                gene_interval_tree_dict[chr_name][gene_name].addi(start_pos, end_pos+1, None)
+    return gene_regions_points_list,gene_range,gene_interval_tree_dict
+

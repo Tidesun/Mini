@@ -13,15 +13,16 @@ from parse_annotation_main import parse_reference_annotation,process_annotation_
 from parse_alignment_main import parse_alignment
 from generate_output import generate_TransELS_output
 
-def adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len):
+def adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len,long_read_gene_matrix_dict):
     for chr_name in gene_isoform_expression_dict:
         for gene_name in gene_isoform_expression_dict[chr_name]:
             if gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'].sum() == 0:
                 continue
-            isoform_eff_length_arr = np.array([gene_isoforms_length_dict[chr_name][gene_name][isoform] - SR_read_len + 1 for isoform in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']])
-            isoform_eff_length_arr[isoform_eff_length_arr < 1] = 1
-            adjusted_isoform_expression = gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] * isoform_eff_length_arr
-            gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] = adjusted_isoform_expression/adjusted_isoform_expression.sum() * short_read_gene_matrix_dict[chr_name][gene_name]['num_SRs_mapped_gene'] / isoform_eff_length_arr
+            # isoform_eff_length_arr = np.array([gene_isoforms_length_dict[chr_name][gene_name][isoform] - SR_read_len + 1 for isoform in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']])
+            # isoform_eff_length_arr[isoform_eff_length_arr < 1] = 1
+            # adjusted_isoform_expression = gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] * isoform_eff_length_arr
+            # gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] = adjusted_isoform_expression/adjusted_isoform_expression.sum() * short_read_gene_matrix_dict[chr_name][gene_name]['num_SRs_mapped_gene'] / isoform_eff_length_arr
+            gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] = gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'] / gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'].sum() * long_read_gene_matrix_dict[chr_name][gene_name]['num_LRs_mapped_gene']
     return gene_isoform_expression_dict
 def normalize_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,total_num_reads):
     gene_isoform_tpm_expression_dict = defaultdict(lambda: defaultdict(dict))
@@ -127,66 +128,91 @@ def estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_ma
         #     except Exception as exc:
         #         print('%r generated an exception: %s' % (params, exc))
     return best_isoform_expression,best_perfect_isoform_expression
-
-def estimate_isoform_expression_single_chr(per_chr_short_read_gene_matrix_dict,per_chr_long_read_gene_matrix_dict,per_chr_gene_isoforms_length_dict,alpha,beta,P):
-    gene_list = set(per_chr_short_read_gene_matrix_dict.keys()).intersection(set(per_chr_long_read_gene_matrix_dict.keys()))
-    per_chr_gene_isoform_expression_dict = {}
-    for gene_name in gene_list:
-        isoform_lengths = np.zeros((len(per_chr_gene_isoforms_length_dict[gene_name])))
-        isoform_names_indics = per_chr_short_read_gene_matrix_dict[gene_name]['isoform_names_indics']
-        for isoform_name in isoform_names_indics:
-            isoform_lengths[isoform_names_indics[isoform_name]] = per_chr_gene_isoforms_length_dict[gene_name][isoform_name]
-        try:
-            per_chr_gene_isoform_expression_dict[gene_name] = {}
-            per_chr_gene_isoform_expression_dict[gene_name]['isoform_expression'],per_chr_gene_isoform_expression_dict[gene_name]['perfect_isoform_expression'] = estimate_isoform_expression(
-                                    per_chr_short_read_gene_matrix_dict[gene_name]['isoform_region_matrix'],
-                                    per_chr_short_read_gene_matrix_dict[gene_name]['region_abund_matrix'],
-                                    per_chr_long_read_gene_matrix_dict[gene_name]['isoform_region_matrix'],
-                                    per_chr_long_read_gene_matrix_dict[gene_name]['region_abund_matrix'],isoform_lengths,alpha,beta,P)
-        except ValueError as e:
-            print("Error encountered for gene {} :{}".format(gene_name,e))
-    return per_chr_gene_isoform_expression_dict
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=79,READ_JUNC_MIN_MAP_LEN=10):
+def estimate_isoform_expression_single_gene(args):
+    (short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P) = args
+    SR_isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix']
+    SR_region_read_count_matrix = short_read_gene_matrix_dict['region_abund_matrix']
+    LR_isoform_region_matrix = long_read_gene_matrix_dict['isoform_region_matrix']
+    LR_region_read_count_matrix = long_read_gene_matrix_dict['region_abund_matrix']
+    isoform_lengths = np.zeros((len(gene_isoforms_length_dict)))
+    isoform_names_indics = short_read_gene_matrix_dict['isoform_names_indics']
+    for isoform_name in isoform_names_indics:
+        isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
+    return estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,alpha,beta,P)
+# def estimate_isoform_expression_single_chr(per_chr_short_read_gene_matrix_dict,per_chr_long_read_gene_matrix_dict,per_chr_gene_isoforms_length_dict,alpha,beta,P):
+#     gene_list = set(per_chr_short_read_gene_matrix_dict.keys()).intersection(set(per_chr_long_read_gene_matrix_dict.keys()))
+#     per_chr_gene_isoform_expression_dict = {}
+#     for gene_name in gene_list:
+#         isoform_lengths = np.zeros((len(per_chr_gene_isoforms_length_dict[gene_name])))
+#         isoform_names_indics = per_chr_short_read_gene_matrix_dict[gene_name]['isoform_names_indics']
+#         for isoform_name in isoform_names_indics:
+#             isoform_lengths[isoform_names_indics[isoform_name]] = per_chr_gene_isoforms_length_dict[gene_name][isoform_name]
+#         try:
+#             per_chr_gene_isoform_expression_dict[gene_name] = {}
+#             per_chr_gene_isoform_expression_dict[gene_name]['isoform_expression'],per_chr_gene_isoform_expression_dict[gene_name]['perfect_isoform_expression'] = estimate_isoform_expression(
+#                                     per_chr_short_read_gene_matrix_dict[gene_name]['isoform_region_matrix'],
+#                                     per_chr_short_read_gene_matrix_dict[gene_name]['region_abund_matrix'],
+#                                     per_chr_long_read_gene_matrix_dict[gene_name]['isoform_region_matrix'],
+#                                     per_chr_long_read_gene_matrix_dict[gene_name]['region_abund_matrix'],isoform_lengths,alpha,beta,P)
+#         except ValueError as e:
+#             print("Error encountered for gene {} :{}".format(gene_name,e))
+#     return per_chr_gene_isoform_expression_dict
+def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
     start_time = time.time()
     print('Start parsing annoation...')
-    gene_points_dict,gene_isoforms_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
-    gene_regions_points_list,gene_range = process_annotation_for_alignment(gene_points_dict,gene_regions_dict)
+    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
+    gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
     end_time_1 = time.time()
     print('Done in %.3f s'%(end_time_1-start_time))
     print('Mapping short read to regions...')  
-    short_read_gene_regions_read_count,SR_read_len,num_SRs = parse_alignment(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_regions_points_list,gene_range,gene_regions_dict,genes_regions_len_dict,False,threads)
+    short_read_gene_regions_read_count,SR_read_len,num_SRs = parse_alignment(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,False,threads)
     end_time_2 = time.time()
+    print('Mapped {} short reads'.format(num_SRs))
     print('Done in %.3f s'%(end_time_2-end_time_1))
-    print('Mapping long read to regions...')  
-    long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs = parse_alignment(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_regions_points_list,gene_range,gene_regions_dict,genes_regions_len_dict, True,threads)
+    print('Mapping long read to regions...')
+    long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs = parse_alignment(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict, True,threads)
     end_time_3 = time.time()
+    print('Mapped {} long reads'.format(num_LRs))
     print('Done in %.3f s'%(end_time_3-end_time_2))
     print('Constructing matrix and calculating condition number...')
-    short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,genes_regions_len_dict,num_SRs,region_expression_calculation_method)
-    long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,genes_regions_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method)
+    short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,SR_gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,SR_genes_regions_len_dict,num_SRs,region_expression_calculation_method)
+    long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method)
     chr_list = set(short_read_gene_matrix_dict.keys()).intersection(set(long_read_gene_matrix_dict.keys()))
-    gene_isoform_expression_dict = defaultdict(dict)
+    gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     end_time_4 = time.time()
     print('Done in %.3f s'%(end_time_4-end_time_3))
-    import dill as pickle
-    rep_name = output_path.split('/')[-2]
-    # rep_name = 1
-    pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_points_dict,gene_regions_dict),open('/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/quantif_pkl/{}.p'.format(rep_name),'wb'))
     print('Calculating the isoform expression...')
-    with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
-        future_estimate = {executor.submit(estimate_isoform_expression_single_chr,short_read_gene_matrix_dict[chr_name],long_read_gene_matrix_dict[chr_name],gene_isoforms_length_dict[chr_name],alpha,beta,P): chr_name for chr_name in chr_list}
-        for future in concurrent.futures.as_completed(future_estimate):
-            chr_name = future_estimate[future]
+
+    list_of_all_genes_chrs = [(gene_name,chr_name) for chr_name in short_read_gene_matrix_dict for gene_name in short_read_gene_matrix_dict[chr_name]]
+    list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P) for chr_name in short_read_gene_matrix_dict for gene_name in short_read_gene_matrix_dict[chr_name]]
+    # if threads == 1:
+    if True:
+        for (gene_name,chr_name), result in zip(list_of_all_genes_chrs, [estimate_isoform_expression_single_gene(args) for args in list_of_args]):
             try:
-                gene_isoform_expression_dict[chr_name] = {}
-                gene_isoform_expression_dict[chr_name] = future.result()
-            except Exception as exc:
-                print('%r generated an exception: %s' % (chr_name, exc))
+                gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['perfect_isoform_expression'] = result
+            except Exception as e:
+                print(e)
+                raise e
+    else:
+        chunksize, extra = divmod(len(list_of_all_genes_chrs), threads)
+        if extra:
+            chunksize += 1
+        with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
+            for (gene_name,chr_name), result in zip(list_of_all_genes_chrs, executor.map(estimate_isoform_expression_single_gene,list_of_args,chunksize=chunksize)):
+                try:
+                    gene_isoform_expression_dict[chr_name][gene_name]['isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['perfect_isoform_expression'] = result
+                except Exception as e:
+                    print(e)
+                    raise e
+
     # for chr_name in chr_list:
     #     gene_isoform_expression_dict[chr_name] = estimate_isoform_expression_single_chr(short_read_gene_matrix_dict[chr_name],long_read_gene_matrix_dict[chr_name],gene_isoforms_length_dict[chr_name],alpha,beta,P)
-    gene_isoform_expression_dict = adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len)   
+    gene_isoform_expression_dict = adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len,long_read_gene_matrix_dict)   
     gene_isoform_tpm_expression_dict = normalize_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,num_SRs+num_LRs)
     end_time_5 = time.time()
+    # import dill as pickle
+    # rep_name = output_path.split('/')[-2]
+    # # rep_name = 1
+    # pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_points_dict,SR_gene_regions_dict,LR_gene_regions_dict,gene_isoform_expression_dict,gene_isoform_tpm_expression_dict),open('/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/quantif_pkl/{}.p'.format(rep_name),'wb'))
     print('Done in %.3f s'%(end_time_5-end_time_4))
     generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
-    return short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict
