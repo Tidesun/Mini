@@ -22,11 +22,15 @@ def calculate_exon_min_read_mapped_length(exon_region_name,point_dict,exon_posit
         return point_dict[points[-2]] - point_dict[points[0]] + 1 + 1
     elif exon_position == 'center':
         return point_dict[points[-2]] - point_dict[points[1]] + 2 + 1       
-def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None):
+def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None,LR_gene_read_min_len_dict=None):
     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
     for chr_name in gene_regions_dict:
         for gene_name in gene_regions_dict[chr_name]:
+            if LR_gene_read_min_len_dict is not None:
+                if (chr_name not in LR_gene_read_min_len_dict) or (gene_name not in LR_gene_read_min_len_dict[chr_name]):
+                    continue
+                min_read_len = LR_gene_read_min_len_dict[chr_name][gene_name]
             point_dict = {}
             for coord in gene_points_dict[chr_name][gene_name]:
                 point_dict['P{}'.format(gene_points_dict[chr_name][gene_name][coord])] = int(coord)
@@ -109,11 +113,12 @@ def filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict
                         
 
 
-def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
         _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
-    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150)
-    LR_gene_regions_dict,LR_genes_regions_len_dict = filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict)
+    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
+    # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict)
+    LR_gene_regions_dict,LR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,None,LR_gene_read_min_len_dict)
     for chr_name in gene_points_dict:
         for gene_name in gene_points_dict[chr_name].copy():
             if (len(SR_gene_regions_dict[chr_name][gene_name]) == 0 or len(LR_gene_regions_dict[chr_name][gene_name]) == 0):

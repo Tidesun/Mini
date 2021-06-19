@@ -1,13 +1,21 @@
 from pathlib import Path
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
-    with open(output_path+"/kvalues.out",'w') as f:
+    with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for chr_name in short_read_gene_matrix_dict:
             for gene_name in short_read_gene_matrix_dict[chr_name]:
                 SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                 LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                 f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
+    with open(output_path+"/kvalues_isoform.out",'w') as f:
+        f.write('Isoform\tGene\tChr\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
+        for chr_name in short_read_gene_matrix_dict:
+            for gene_name in short_read_gene_matrix_dict[chr_name]:
+                for isoform_name in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']:
+                    SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+                    LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(output_path+"/expression_gene.out",'w') as f_gene:

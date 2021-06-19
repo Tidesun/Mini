@@ -12,6 +12,7 @@ from construct_feature_matrix import generate_all_feature_matrix_short_read,gene
 from parse_annotation_main import parse_reference_annotation,process_annotation_for_alignment
 from parse_alignment_main import parse_alignment
 from generate_output import generate_TransELS_output
+from get_long_read_gene_distribution import get_long_read_gene_distribution
 
 def adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len,long_read_gene_matrix_dict):
     for chr_name in gene_isoform_expression_dict:
@@ -159,8 +160,11 @@ def estimate_isoform_expression_single_gene(args):
 #     return per_chr_gene_isoform_expression_dict
 def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
     start_time = time.time()
+    print('Preprocessing...')
+    
+    LR_gene_read_min_len_dict = get_long_read_gene_distribution(ref_file_path,long_read_alignment_file_path)
     print('Start parsing annoation...')
-    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
+    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict)
     gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
     end_time_1 = time.time()
     print('Done in %.3f s'%(end_time_1-start_time))

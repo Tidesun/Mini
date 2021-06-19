@@ -240,11 +240,10 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
     for (connected_region,overlapped_length,mapped_region_length) in best_regions:
         if connected_region in gene_region_dict:
             return connected_region,overlapped_length
-    # if fail searching
-    for (connected_region,overlapped_length,mapped_region_length) in best_regions:
-        for region in gene_region_dict:
-            if connected_region in region:
-                return connected_region,overlapped_length
+    # # if fail searching
+    # for (connected_region,overlapped_length,mapped_region_length) in best_regions:
+    #     if connected_region in region:
+    #         return connected_region,overlapped_length
     
     return '',0
 
