@@ -73,33 +73,33 @@ def construct_region_abundance_matrix_short_read(region_read_count_dict,region_e
 #         region_tpm_matrix = region_tpm_matrix * 1e6 / sum(region_tpm_matrix)
 #         region_fpkm_matrix = region_fpkm_matrix * 1e9 / region_fpkm_matrix.shape[0]
 #     return region_tpm_matrix,region_fpkm_matrix
-
+def divide_by_zero(a,b):
+    if b == 0:
+        return float('inf')
+    else:
+        return a/b
 def get_condition_number(isoform_region_matrix):
     # Calculate K value
-    singular_values = LA.svd(isoform_region_matrix,compute_uv=False)
-    svd_val_max = singular_values[0]
-    rank = LA.matrix_rank(isoform_region_matrix)
-    if (rank == min(isoform_region_matrix.shape[0],isoform_region_matrix.shape[1])):
+    multiply_transpose_matrix = isoform_region_matrix.T.dot(isoform_region_matrix)
+    singular_values = LA.svd(multiply_transpose_matrix,compute_uv=False)
+    rank = LA.matrix_rank(multiply_transpose_matrix)
+
+    svd_val_max = np.sqrt(singular_values[0])
+    svd_val_pos_min = np.sqrt(singular_values[singular_values > 0].min())
+    svd_val_min = np.sqrt(singular_values[-1])
+    if (rank == multiply_transpose_matrix.shape[0]):
         # full rank
-        svd_val_min = singular_values[-1]
         kvalue = (svd_val_max - svd_val_min)/svd_val_max
     else:
         # not full rank
-        svd_val_pos_min = singular_values[singular_values > 0].min()
         kvalue =  (svd_val_max/svd_val_pos_min)
     
     # Calculate condition number
-    singular_values = LA.svd(isoform_region_matrix.T.dot(isoform_region_matrix),compute_uv=False)
-    svd_val_max = singular_values[0]
-    svd_val_min = singular_values[-1]
-    regular_condition_number = svd_val_max/svd_val_min
+    regular_condition_number = divide_by_zero(svd_val_max,svd_val_min)
 
     # Calculate generalized condition number
-    singular_values = LA.svd(isoform_region_matrix.T.dot(isoform_region_matrix),compute_uv=False)
-    svd_val_max = singular_values[0]
-    svd_val_pos_min = singular_values[singular_values > 0].min()
     generalized_condition_number = svd_val_max/svd_val_pos_min
-    if (rank == min(isoform_region_matrix.shape[0],isoform_region_matrix.shape[1])):
+    if (rank == multiply_transpose_matrix.shape[0]):
         assert regular_condition_number == generalized_condition_number
     return kvalue,regular_condition_number,generalized_condition_number
 def calculate_condition_number(region_isoform_dict,isoform_names):
