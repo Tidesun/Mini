@@ -89,7 +89,7 @@ def get_condition_number(isoform_region_matrix):
         kvalue =  (svd_val_max/svd_val_pos_min)
     
     # Calculate condition number
-    singular_values = LA.svd(isoform_region_matrix.T.dot(isoform_region_matrix)+0.01*np.identity(isoform_region_matrix.shape[1]),compute_uv=False)
+    singular_values = LA.svd(isoform_region_matrix.T.dot(isoform_region_matrix),compute_uv=False)
     svd_val_max = singular_values[0]
     svd_val_min = singular_values[-1]
     regular_condition_number = svd_val_max/svd_val_min
@@ -99,7 +99,8 @@ def get_condition_number(isoform_region_matrix):
     svd_val_max = singular_values[0]
     svd_val_pos_min = singular_values[singular_values > 0].min()
     generalized_condition_number = svd_val_max/svd_val_pos_min
-    
+    if (rank == min(isoform_region_matrix.shape[0],isoform_region_matrix.shape[1])):
+        assert regular_condition_number == generalized_condition_number
     return kvalue,regular_condition_number,generalized_condition_number
 def calculate_condition_number(region_isoform_dict,isoform_names):
     region_names = region_isoform_dict.keys()
