@@ -1,4 +1,4 @@
-from parse_annotation import parse_annotation
+from .parse_annotation import parse_annotation
 from collections import defaultdict
 def check_region_type(region_name):
     if ((region_name.count(':') == 1) and ('-' not in region_name)):

@@ -43,7 +43,7 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     aln_lines = []
     # for each read in the alignment
     ## for testing
-    import pickle
+    # import pickle
     if (long_read):
         mapping_pkl_path = '/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/jobs/GM/lr_only/mapping.pkl'
     else:
@@ -100,7 +100,7 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                                 gene_regions_read_count[rname][gname][region_name] += 1
                         read_lens.append(mapping['read_length'])
                 # for testing
-                pickle.dump(all_mappings,mapping_pkl_file)
+                # pickle.dump(all_mappings,mapping_pkl_file)
                 aln_lines = []
                 print('Done.')
         if (len(aln_lines)>0):
@@ -120,7 +120,7 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                             gene_regions_read_count[rname][gname][region_name] += 1
                     read_lens.append(mapping['read_length'])
             # for testing
-            pickle.dump(all_mappings,mapping_pkl_file)
+            # pickle.dump(all_mappings,mapping_pkl_file)
             aln_lines = []
     mapping_pkl_file.close()
         
