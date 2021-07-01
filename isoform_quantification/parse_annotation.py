@@ -5,7 +5,7 @@ import sys
 import time
 import numpy as np
 import concurrent.futures
-from .util import sync_reference_name
+from util import sync_reference_name
 ##########
 def split_and_sort_exons(gene_exons_dict):
     new_gene_exons_dict = {}
