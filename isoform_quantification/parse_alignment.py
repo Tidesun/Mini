@@ -32,6 +32,9 @@ def parse_read_line(line, READ_LEN):
     fields = line.split('\t')
     read_name = fields[0]
     rname = fields[2]
+    converted_chr_name = sync_reference_name(rname)
+    if (converted_chr_name.isnumeric()):
+        rname = converted_chr_name
     read_start_pos = int(fields[3])
     cigar_field = fields[5]
     read_len_list = []
@@ -312,8 +315,6 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
         read_end_pos += i
     read_length = comp_read_len(read_len_list)
     mapping['read_length'] = read_length
-
-    gene_candidates = []
     start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos)
     end_index = bisect.bisect_left(end_pos_list[rname], read_end_pos)
     gene_candidates = (set(end_gname_list[rname][end_index:]) & set(start_gname_list[rname][:start_index])) 
@@ -342,13 +343,6 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
         is_false_mapped = True
         for best_gene,best_region in zip(best_genes,best_regions):
             mapping['mapping_area'].append({'chr_name':rname,'gene_name':best_gene,'region_name':best_region})
-            if ((best_gene in read_name) and (best_region in read_name)):
-                is_false_mapped = False
-        if (is_false_mapped and (str(read_start_pos) in read_name)):
-            print('{}/{}/{}:{}'.format(read_name,read_start_pos,best_genes,best_regions))
-    else:
-        if (str(read_start_pos) in read_name):
-            print('{}/{}'.format(read_name,read_start_pos))
     return mapping
                 #print 'Gname %s, %s, region %s mapped' % (rname, gname, region_name)
                 #print 'Read: ' + line
@@ -403,15 +397,8 @@ def map_long_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
         #     region_name =  map_read_to_junct_region(read_start_pos, read_len_list, points,read_name)
     if (len(best_regions) !=0):
         mapping['read_mapped'] = True
-        is_false_mapped = True
         for best_gene,best_region in zip(best_genes,best_regions):
             mapping['mapping_area'].append({'chr_name':rname,'gene_name':best_gene,'region_name':best_region})
-            if ((best_gene in read_name)):
-                is_false_mapped = False
-        if (is_false_mapped):
-            print('{}/{}/{}:{}'.format(read_name,read_start_pos,best_genes,best_regions))
-    else:
-        print('{}/{}'.format(read_name,temp_region))
     return mapping
 ##########        
 # def map_long_read_to_region(read_start_pos, read_len_list, points):

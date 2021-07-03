@@ -167,9 +167,9 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
     return gene_matrix_dict
 def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_regions_read_length,gene_region_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method):
     gene_matrix_dict = dict()
-    for chr_name in gene_isoforms_dict:
+    for chr_name in gene_regions_read_count:
         gene_matrix_dict[chr_name] = dict()
-        for gene_name in gene_isoforms_dict[chr_name]:
+        for gene_name in gene_regions_read_count[chr_name]:
             isoform_names = gene_isoforms_dict[chr_name][gene_name]
 
             # region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)

@@ -20,11 +20,11 @@ def get_long_read_gene_distribution(annot_path,alignment_path):
     gene_range_dict = get_gene_range(annot_path)
     gene_read_len_dict = defaultdict(lambda:defaultdict(lambda:[]))
     with open(alignment_path,'r') as f:
-        for line in f.readlines():
+        for line in f:
             if line[0] == '@':
                 continue
             fields = line.split('\t')
-            if (fields[1] == '4'):
+            if (fields[2] == '*'):
                 continue
             [read_name, read_start_pos, rname, read_len_list] = parse_read_line(line,0)
             read_len = len(fields[9])

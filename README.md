@@ -39,14 +39,14 @@ optional arguments:
 required named arguments for TrEESR:
   -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
                         The path of annotation file
-  -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
-                        The path of short read sam file
   -lrsam LONG_READ_SAM_PATH, --long_read_sam_path LONG_READ_SAM_PATH
                         The path of long read sam file
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
                         The path of output directory
 
 optional arguments:
+  -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
+                        The path of short read sam file
   --b_cal_method B_CAL_METHOD
                         Region expression calculation method
                         ['original','coverage','div_read_length']

@@ -3,7 +3,7 @@ import concurrent.futures
 import datetime
 import time
 from itertools import repeat
-
+import pickle
 import numpy as np
 from numpy import linalg as LA
 from qpsolvers import solve_qp
@@ -161,8 +161,9 @@ def estimate_isoform_expression_single_gene(args):
 def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
     start_time = time.time()
     print('Preprocessing...')
-    
-    LR_gene_read_min_len_dict = get_long_read_gene_distribution(ref_file_path,long_read_alignment_file_path)
+    LR_gene_read_min_len_dict = None
+    # LR_gene_read_min_len_dict = get_long_read_gene_distribution(ref_file_path,long_read_alignment_file_path)
+    # print(LR_gene_read_min_len_dict)
     print('Start parsing annoation...')
     gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict)
     gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
@@ -181,14 +182,18 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     print('Constructing matrix and calculating condition number...')
     short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,SR_gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,SR_genes_regions_len_dict,num_SRs,region_expression_calculation_method)
     long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method)
-    chr_list = set(short_read_gene_matrix_dict.keys()).intersection(set(long_read_gene_matrix_dict.keys()))
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     end_time_4 = time.time()
     print('Done in %.3f s'%(end_time_4-end_time_3))
     print('Calculating the isoform expression...')
-
-    list_of_all_genes_chrs = [(gene_name,chr_name) for chr_name in short_read_gene_matrix_dict for gene_name in short_read_gene_matrix_dict[chr_name]]
-    list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P) for chr_name in short_read_gene_matrix_dict for gene_name in short_read_gene_matrix_dict[chr_name]]
+    list_of_all_genes_chrs = []
+    pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict),open('/fs/ess/scratch/PCON0009/haoran/TransELS/a.pkl','wb'))
+    for chr_name in long_read_gene_matrix_dict:
+        if chr_name in short_read_gene_matrix_dict:
+            for gene_name in long_read_gene_matrix_dict[chr_name]:
+                if gene_name in short_read_gene_matrix_dict[chr_name]:
+                    list_of_all_genes_chrs.append((gene_name,chr_name))
+    list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P) for gene_name,chr_name in list_of_all_genes_chrs]
     # if threads == 1:
     if True:
         for (gene_name,chr_name), result in zip(list_of_all_genes_chrs, [estimate_isoform_expression_single_gene(args) for args in list_of_args]):
@@ -211,7 +216,7 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
 
     # for chr_name in chr_list:
     #     gene_isoform_expression_dict[chr_name] = estimate_isoform_expression_single_chr(short_read_gene_matrix_dict[chr_name],long_read_gene_matrix_dict[chr_name],gene_isoforms_length_dict[chr_name],alpha,beta,P)
-    gene_isoform_expression_dict = adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len,long_read_gene_matrix_dict)   
+    # gene_isoform_expression_dict = adjust_isoform_expression_by_gene_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,SR_read_len,long_read_gene_matrix_dict)   
     gene_isoform_tpm_expression_dict = normalize_expression(gene_isoform_expression_dict,gene_isoforms_length_dict,short_read_gene_matrix_dict,num_SRs+num_LRs)
     end_time_5 = time.time()
     # import dill as pickle
@@ -219,4 +224,4 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # # rep_name = 1
     # pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_points_dict,SR_gene_regions_dict,LR_gene_regions_dict,gene_isoform_expression_dict,gene_isoform_tpm_expression_dict),open('/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/quantif_pkl/{}.p'.format(rep_name),'wb'))
     print('Done in %.3f s'%(end_time_5-end_time_4))
-    generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
+    generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)

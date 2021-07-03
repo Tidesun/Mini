@@ -167,6 +167,9 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         if (fields[2] != 'exon'):
             continue
         chr_name = fields[0]
+        converted_chr_name = sync_reference_name(fields[0])
+        if (converted_chr_name.isnumeric()):
+            chr_name = converted_chr_name
         # if chr_name == '':
         #     continue
         num_exons += 1
