@@ -187,7 +187,6 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     print('Done in %.3f s'%(end_time_4-end_time_3))
     print('Calculating the isoform expression...')
     list_of_all_genes_chrs = []
-    pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict),open('/fs/ess/scratch/PCON0009/haoran/TransELS/a.pkl','wb'))
     for chr_name in long_read_gene_matrix_dict:
         if chr_name in short_read_gene_matrix_dict:
             for gene_name in long_read_gene_matrix_dict[chr_name]:
