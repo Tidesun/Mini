@@ -115,7 +115,7 @@ def filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict
 
 def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
-        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
+        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
     SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
     # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict)
     LR_gene_regions_dict,LR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,None,None)
@@ -125,7 +125,7 @@ def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_
                 for dic in [gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict]:
                     if chr_name in dic and gene_name in dic[chr_name]:
                         del dic[chr_name][gene_name]
-    return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict
+    return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict
 from intervaltree import IntervalTree
 def process_annotation_for_alignment(gene_exons_dict,gene_points_dict):
     print('Process the reference annotation for read_count...')

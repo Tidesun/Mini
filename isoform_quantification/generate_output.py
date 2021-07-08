@@ -1,21 +1,24 @@
 from pathlib import Path
-def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict):
+def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict] = info_dict_list
     with open(output_path+"/kvalues_gene.out",'w') as f:
-        f.write('Gene\tChr\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
+        f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for chr_name in short_read_gene_matrix_dict:
             for gene_name in short_read_gene_matrix_dict[chr_name]:
+                num_isoforms,num_exons,num_split_exons = gene_num_isoform_dict[chr_name][gene_name],raw_gene_num_exon_dict[chr_name][gene_name],gene_num_exon_dict[chr_name][gene_name]
                 SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                 LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
+                f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,num_exons,num_split_exons,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
     with open(output_path+"/kvalues_isoform.out",'w') as f:
-        f.write('Isoform\tGene\tChr\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
+        f.write('Isoform\tGene\tChr\tNum_exons\tIsoform_length\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for chr_name in short_read_gene_matrix_dict:
             for gene_name in short_read_gene_matrix_dict[chr_name]:
                 for isoform_name in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']:
+                    num_exons,isoform_length = raw_isoform_num_exon_dict[isoform_name],isoform_length_dict[isoform_name]
                     SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                     LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
+                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(output_path+"/expression_gene.out",'w') as f_gene:

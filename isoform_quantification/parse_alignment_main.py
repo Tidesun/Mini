@@ -138,9 +138,9 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                 line_offset.append(offset)
             offset += len(line)
     num_aln_lines = len(line_offset)
-    pool = mp.Pool(threads)
+    pool = mp.Pool(threads+1)
     # partial_read_alignment = partial(parse_alignment_iteration,alignment_file_path)
-    chunksize, extra = divmod(num_aln_lines, threads - 1)
+    chunksize, extra = divmod(num_aln_lines, threads)
     if extra:
         chunksize += 1
     aln_line_marker = []
@@ -149,7 +149,7 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     #         return [num]
     #     if num > 2**32 -1:
     #         return [2**32-1] + split_max_size(num-2**32+1)
-    for i in range(threads - 1):
+    for i in range(threads):
         # if (line_offset[i*chunksize] > 2**31-1):
         #     new_line_offset = split_max_size(line_offset[i*chunksize])
         #     aln_line_marker.append((new_line_offset,chunksize))

@@ -201,6 +201,7 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'] = [start_pos for [start_pos,end_pos] in region_pos]
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['end_pos'] = [end_pos for [start_pos,end_pos] in region_pos]
                 del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos']
+    raw_gene_exons_dict = gene_exons_dict.copy()
     gene_exons_dict = split_and_sort_exons(gene_exons_dict)
     # index the point position
     for chr_name in gene_exons_dict:
@@ -213,4 +214,4 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                         point_index += 1
     isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
     return [gene_exons_dict, gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
-            isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict]
+            isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict]

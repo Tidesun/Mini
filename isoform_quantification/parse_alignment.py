@@ -67,7 +67,7 @@ def parse_read_line(line, READ_LEN):
                     seg_len = 0
                 else:
                     seg_len += int(cigar_list[2 * idx])
-            elif (cigar_list[2 * idx + 1] in ['I','S']):  # Insertion in reference
+            elif (cigar_list[2 * idx + 1] in ['I','S','H']):  # Insertion in reference
                 if (M == 0):  # Mode is changed
                     read_len_list.append(seg_len)
                     seg_len = 0
