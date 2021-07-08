@@ -1,7 +1,17 @@
 from pathlib import Path
+import numpy as np
+import json
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict] = info_dict_list
+    out_dict = short_read_gene_matrix_dict.copy()
+    for chr in out_dict:
+        for gene in out_dict[chr]:
+            for key in out_dict[chr][gene]:
+                    if type(out_dict[chr][gene][key]) == np.ndarray:
+                        out_dict[chr][gene][key] = out_dict[chr][gene][key].tolist()
+    with open(output_path+'/raw_data.out','w') as f:
+        f.write(json.dumps(out_dict))
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for chr_name in short_read_gene_matrix_dict:
