@@ -1,17 +1,20 @@
 from pathlib import Path
 import numpy as np
-import json
+import dill as pickle
+import io
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict] = info_dict_list
     out_dict = short_read_gene_matrix_dict.copy()
+    bio = io.BytesIO()
     for chr in out_dict:
         for gene in out_dict[chr]:
-            for key in out_dict[chr][gene]:
-                    if type(out_dict[chr][gene][key]) == np.ndarray:
-                        out_dict[chr][gene][key] = out_dict[chr][gene][key].tolist()
+            bio.write(str.encode('{}\n'.format(gene)))
+            np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    
+    mystr = bio.getvalue().decode('latin1')
     with open(output_path+'/raw_data.out','w') as f:
-        f.write(json.dumps(out_dict))
+        f.write(mystr)
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for chr_name in short_read_gene_matrix_dict:
@@ -31,6 +34,8 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
                     f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    with open(output_path+'lr.pkl','wb') as f:
+        pickle.dump(long_read_gene_matrix_dict,f)
     with open(output_path+"/expression_gene.out",'w') as f_gene:
         with open(output_path+"/expression_isoform.out",'w') as f_isoform:
             f_gene.write('Gene\tChr\tTPM\n')

@@ -1,14 +1,16 @@
 from parse_alignment import map_read,parse_read_line
+from patch_mp import patch_mp_connection_bpo_17560
+
 from collections import defaultdict
 import traceback
 from operator import itemgetter, attrgetter
 from functools import partial
-import concurrent.futures
 import numpy as np
 import time
 import random
 import multiprocessing as mp
 import os
+
 # from memory_profiler import profile
 # def parse_alignment_iteration(alignment_file_path,gene_points_dict,gene_interval_tree_dict, filtered_gene_regions_dict,
 #                     start_pos_list, start_gname_list, end_pos_list, end_gname_list,
@@ -93,6 +95,7 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
 
 # @profile
 def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,gene_regions_dict,genes_regions_len_dict,long_read,threads):
+    patch_mp_connection_bpo_17560()
     start_t = time.time()
     manager = mp.Manager()
     gene_regions_read_count = {}
