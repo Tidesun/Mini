@@ -101,7 +101,9 @@ def get_condition_number(isoform_region_matrix):
     generalized_condition_number = svd_val_max/svd_val_pos_min
     if (rank == multiply_transpose_matrix.shape[0]):
         assert regular_condition_number == generalized_condition_number
-    return kvalue,regular_condition_number,generalized_condition_number
+
+    singular_value_product = svd_val_max * svd_val_pos_min
+    return kvalue,regular_condition_number,generalized_condition_number,singular_value_product
 def calculate_condition_number(region_isoform_dict,isoform_names):
     region_names = region_isoform_dict.keys()
     (region_names_indics,isoform_names_indics) = construct_index(region_names,isoform_names)

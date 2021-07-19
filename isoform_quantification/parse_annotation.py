@@ -6,6 +6,7 @@ import time
 import numpy as np
 import concurrent.futures
 from util import sync_reference_name
+import pickle
 ##########
 def split_and_sort_exons(gene_exons_dict):
     new_gene_exons_dict = {}
@@ -30,6 +31,8 @@ def split_and_sort_exons(gene_exons_dict):
                     last_begin = offset
             if last_begin is not None:
                 new_exon_sorted.append([last_begin,offset])
+            # with open('/fs/ess/scratch/PCON0009/haoran/IDP/run_TransELS/TransELS/H1.pkl','wb') as f:
+            #     pickle.dump(new_exon_sorted,f)
             new_exon_sorted = sorted(new_exon_sorted, key=itemgetter(0, 1))
             new_gene_exons_dict[chr_name][gene_name] = [[start_pos,end_pos,end_pos - start_pos + 1] for [start_pos,end_pos] in new_exon_sorted if start_pos != end_pos]
     return new_gene_exons_dict
@@ -178,7 +181,7 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         # use 1 based index
         start_pos = int(fields[3])
         end_pos = int(fields[4])
-        if start_pos == end_pos:
+        if start_pos >= end_pos:
             continue
         #initialize dict
         if chr_name not in gene_exons_dict:

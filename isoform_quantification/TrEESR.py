@@ -15,7 +15,7 @@ def TrEESR(ref_file_path,output_path,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=
     end_time_2 = datetime.datetime.now()
     print('Done in %.3f s'%((end_time_2-end_time_1).total_seconds()))
     raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict = defaultdict(dict),defaultdict(dict),defaultdict(dict)
-    raw_isoform_num_exon_dict,isoform_length_dict = defaultdict(lambda :defaultdict(dict)),defaultdict(lambda :defaultdict(dict))
+    raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict = {},{},{}
     for chr_name in raw_isoform_exons_dict:
         for gene_name in raw_isoform_exons_dict[chr_name]:
             raw_gene_num_exon_dict[chr_name][gene_name] = len(raw_gene_exons_dict[chr_name][gene_name])
@@ -24,7 +24,8 @@ def TrEESR(ref_file_path,output_path,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=
             for isoform_name in raw_isoform_exons_dict[chr_name][gene_name]:
                 raw_isoform_num_exon_dict[isoform_name] = len(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'])
                 isoform_length_dict[isoform_name] = gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
-    info_dict_list = [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict]
+                num_isoforms_dict[isoform_name] =  len(raw_isoform_exons_dict[chr_name][gene_name])
+    info_dict_list = [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict]
     generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list)
     return short_read_gene_matrix_dict,long_read_gene_matrix_dict
 def get_kvalues_dict(ref_file_path,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
