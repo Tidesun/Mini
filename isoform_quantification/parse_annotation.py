@@ -183,12 +183,16 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         end_pos = int(fields[4])
         if start_pos >= end_pos:
             continue
+        if chr_name in gene_exons_dict:
+            if gene_name in gene_exons_dict[chr_name]:
+                if (start_pos,end_pos) in gene_exons_dict[chr_name][gene_name]:
+                    continue
         #initialize dict
         if chr_name not in gene_exons_dict:
             gene_exons_dict[chr_name],gene_points_dict[chr_name],gene_isoforms_dict[chr_name],gene_isoforms_length_dict[chr_name],raw_isoform_exons_dict[chr_name] = {},{},{},{},{}
         if gene_name not in gene_exons_dict[chr_name]:
-            gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],gene_isoforms_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],raw_isoform_exons_dict[chr_name][gene_name]= [],{},[],{},{}
-        gene_exons_dict[chr_name][gene_name].append([start_pos, end_pos])
+            gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],gene_isoforms_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],raw_isoform_exons_dict[chr_name][gene_name]= set(),{},[],{},{}
+        gene_exons_dict[chr_name][gene_name].add((start_pos, end_pos))
         if isoform_name not in gene_isoforms_length_dict[chr_name][gene_name]:
             gene_isoforms_length_dict[chr_name][gene_name][isoform_name] = 0
             raw_isoform_exons_dict[chr_name][gene_name][isoform_name] = {'region_pos':[]}
@@ -197,6 +201,12 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         gene_isoforms_length_dict[chr_name][gene_name][isoform_name] += end_pos - start_pos + 1
         raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos'].append([start_pos,end_pos])
     file_read.close()
+    for chr_name in gene_exons_dict:
+        for gene_name in gene_exons_dict[chr_name]:
+            exon_list = []
+            for (start_pos,end_pos) in gene_exons_dict[chr_name][gene_name]:
+                exon_list.append([start_pos,end_pos])
+            gene_exons_dict[chr_name][gene_name] = exon_list
     for chr_name in raw_isoform_exons_dict:
         for gene_name in raw_isoform_exons_dict[chr_name]:
             for isoform_name in raw_isoform_exons_dict[chr_name][gene_name]:
