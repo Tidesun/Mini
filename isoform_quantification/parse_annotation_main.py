@@ -78,33 +78,48 @@ def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,REA
                     new_gene_regions_dict[chr_name][gene_name][region_name] = gene_regions_dict[chr_name][gene_name][region_name]
                     new_genes_regions_len_dict[chr_name][gene_name][region_name] = genes_regions_len_dict[chr_name][gene_name][region_name]
     return new_gene_regions_dict,new_genes_regions_len_dict
-
-def filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict,max_num_missing_exons=2):
+def filter_regions(gene_regions_dict,genes_regions_len_dict):
     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
     for rname in gene_regions_dict:
         for gname in gene_regions_dict[rname]:
-            total_num_exons = len(gene_exons_dict[rname][gname])
-            if total_num_exons <= max_num_missing_exons:
-                new_gene_regions_dict[rname][gname] = gene_regions_dict[rname][gname]
-                new_genes_regions_len_dict[rname][gname] = genes_regions_len_dict[rname][gname]
-            else:
-                max_num_exon_transcript = {}
-                for region_name in gene_regions_dict[rname][gname]:
-                    num_exons_in_region = region_name.count(':')
-                    for transcript in gene_regions_dict[rname][gname][region_name]:
-                        if transcript not in max_num_exon_transcript:
-                            max_num_exon_transcript[transcript] = num_exons_in_region
-                        else:
-                            max_num_exon_transcript[transcript] = max(num_exons_in_region,max_num_exon_transcript[transcript])
-                min_num_exons_transcript = total_num_exons - max_num_missing_exons
-                for transcript in max_num_exon_transcript:
-                    min_num_exons_transcript = min(min_num_exons_transcript,max_num_exon_transcript[transcript])
-                for region_name in gene_regions_dict[rname][gname]:
-                    num_exons_in_region = region_name.count(':')
-                    if num_exons_in_region >= min_num_exons_transcript:
-                        new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
-                        new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
+            regions_set = set()
+            for region in gene_regions_dict[rname][gname]:
+                if check_region_type(region) in ['one_exon','one_junction']:
+                    regions_set.add(region)
+            for region_name in regions_set:
+                new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
+                new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
+    return new_gene_regions_dict,new_genes_regions_len_dict
+def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
+    new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
+    new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
+    for rname in gene_regions_dict:
+        for gname in gene_regions_dict[rname]:
+            regions_set = set()
+            isoform_region_dict = defaultdict(lambda:set())
+            for region in gene_regions_dict[rname][gname]:
+                for isoform in gene_regions_dict[rname][gname][region]:
+                    isoform_region_dict[isoform].add(region)
+            for isoform in isoform_region_dict:
+                max_region_num = 0
+                longest_region = ''
+                allowed_regions_set = set()
+                for region in isoform_region_dict[isoform]:
+                    region_exon_num = region.count(':')
+                    if max_region_num < region_exon_num:
+                        max_region_num = region_exon_num
+                        longest_region = region
+                    if region_exon_num >= 3:
+                        allowed_regions_set.add(region)
+                if max_region_num > 3:
+                    regions_set = regions_set.union(allowed_regions_set)
+                else:
+                    if longest_region != '':
+                        regions_set.add(longest_region)
+            for region_name in regions_set:
+                new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
+                new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
     return new_gene_regions_dict,new_genes_regions_len_dict
 
 
@@ -116,9 +131,9 @@ def filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict
 def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
         _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
-    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
-    # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_by_num_exons(gene_exons_dict,gene_regions_dict,genes_regions_len_dict)
-    LR_gene_regions_dict,LR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,None,None)
+    # SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
+    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,genes_regions_len_dict)
+    LR_gene_regions_dict,LR_genes_regions_len_dict = filter_long_read_regions(gene_regions_dict,genes_regions_len_dict)
     for chr_name in gene_points_dict:
         for gene_name in gene_points_dict[chr_name].copy():
             if (len(SR_gene_regions_dict[chr_name][gene_name]) == 0 or len(LR_gene_regions_dict[chr_name][gene_name]) == 0):
