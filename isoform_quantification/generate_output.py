@@ -13,7 +13,16 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
             np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
     mystr = bio.getvalue().decode('latin1')
-    with open(output_path+'/raw_data.out','w') as f:
+    with open(output_path+'/sr_A.out','w') as f:
+        f.write(mystr)
+    bio = io.BytesIO()
+    for chr in long_read_gene_matrix_dict:
+        for gene in long_read_gene_matrix_dict[chr]:
+            bio.write(str.encode('{}\n'.format(gene)))
+            np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    
+    mystr = bio.getvalue().decode('latin1')
+    with open(output_path+'/lr_A.out','w') as f:
         f.write(mystr)
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tSR_A_dim\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\tLR_A_dim\n')
