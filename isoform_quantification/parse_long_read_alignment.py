@@ -231,7 +231,6 @@ def map_read(line, gene_regions_read_count, gene_regions_points_list,
         if (region_name == ''):
             region_name =  map_read_to_junct_region(read_start_pos, read_len_list, points)
         if (region_name != ''):
-            print(gnameq)
             if (region_name in gene_regions_read_count[rname][gname]):
                 gene_regions_read_count[rname][gname][region_name] += 1
                 mapping['read_mapped'] = True

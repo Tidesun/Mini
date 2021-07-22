@@ -179,8 +179,12 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             # region_read_count_dict = filter_regions(gene_regions_read_count[chr_name][gene_name],long_read=True)
             # region_len_dict = filter_regions(gene_region_len_dict[chr_name][gene_name],long_read=True)
             # region_read_length = filter_regions(gene_regions_read_length[chr_name][gene_name],long_read=True)
+            region_isoform_dict = {}
+            for region in gene_regions_read_count[chr_name][gene_name]:
+                region_isoform_dict[region] = gene_regions_dict[chr_name][gene_name][region]
 
-            region_isoform_dict = gene_regions_dict[chr_name][gene_name]
+
+            # region_isoform_dict = gene_regions_dict[chr_name][gene_name]
             region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
             region_read_length = gene_regions_read_length[chr_name][gene_name]
