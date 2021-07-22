@@ -5,44 +5,52 @@ import io
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict] = info_dict_list
-    out_dict = short_read_gene_matrix_dict.copy()
-    bio = io.BytesIO()
-    for chr in out_dict:
-        for gene in out_dict[chr]:
-            bio.write(str.encode('{}\n'.format(gene)))
-            np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    # out_dict = short_read_gene_matrix_dict.copy()
+    # bio = io.BytesIO()
+    # for chr in out_dict:
+    #     for gene in out_dict[chr]:
+    #         bio.write(str.encode('{}\n'.format(gene)))
+    #         np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    mystr = bio.getvalue().decode('latin1')
-    with open(output_path+'/sr_A.out','w') as f:
-        f.write(mystr)
-    bio = io.BytesIO()
-    for chr in long_read_gene_matrix_dict:
-        for gene in long_read_gene_matrix_dict[chr]:
-            bio.write(str.encode('{}\n'.format(gene)))
-            np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    # mystr = bio.getvalue().decode('latin1')
+    # with open(output_path+'/sr_A.out','w') as f:
+    #     f.write(mystr)
+    # bio = io.BytesIO()
+    # for chr in long_read_gene_matrix_dict:
+    #     for gene in long_read_gene_matrix_dict[chr]:
+    #         bio.write(str.encode('{}\n'.format(gene)))
+    #         np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    mystr = bio.getvalue().decode('latin1')
-    with open(output_path+'/lr_A.out','w') as f:
-        f.write(mystr)
+    # mystr = bio.getvalue().decode('latin1')
+    # with open(output_path+'/lr_A.out','w') as f:
+    #     f.write(mystr)
+    list_of_all_genes_chrs = []
+    for chr_name in long_read_gene_matrix_dict:
+        if chr_name in short_read_gene_matrix_dict:
+            for gene_name in long_read_gene_matrix_dict[chr_name]:
+                if gene_name in short_read_gene_matrix_dict[chr_name]:
+                    list_of_all_genes_chrs.append((gene_name,chr_name))
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tSR_A_dim\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\tLR_A_dim\n')
-        for chr_name in short_read_gene_matrix_dict:
-            for gene_name in short_read_gene_matrix_dict[chr_name]:
-                num_isoforms,num_exons,num_split_exons = gene_num_isoform_dict[chr_name][gene_name],raw_gene_num_exon_dict[chr_name][gene_name],gene_num_exon_dict[chr_name][gene_name]
-                SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                SR_A_dim = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
-                LR_A_dim = long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
-                f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,num_exons,num_split_exons,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_A_dim,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_A_dim))
+        for (gene_name,chr_name) in list_of_all_genes_chrs:
+        # for chr_name in short_read_gene_matrix_dict:
+        #     for gene_name in short_read_gene_matrix_dict[chr_name]:
+            num_isoforms,num_exons,num_split_exons = gene_num_isoform_dict[chr_name][gene_name],raw_gene_num_exon_dict[chr_name][gene_name],gene_num_exon_dict[chr_name][gene_name]
+            SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+            LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+            SR_A_dim = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
+            LR_A_dim = long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
+            f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,num_exons,num_split_exons,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_A_dim,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_A_dim))
     with open(output_path+"/kvalues_isoform.out",'w') as f:
         f.write('Isoform\tGene\tChr\tNum_exons\tIsoform_length\tNum_isoforms\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
-        for chr_name in short_read_gene_matrix_dict:
-            for gene_name in short_read_gene_matrix_dict[chr_name]:
-                for isoform_name in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']:
-                    num_exons,isoform_length,num_isoforms = raw_isoform_num_exon_dict[isoform_name],isoform_length_dict[isoform_name],num_isoforms_dict[isoform_name]
-                    SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                    LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
-                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
+        for (gene_name,chr_name) in list_of_all_genes_chrs:
+        # for chr_name in short_read_gene_matrix_dict:
+        #     for gene_name in short_read_gene_matrix_dict[chr_name]:
+            for isoform_name in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']:
+                num_exons,isoform_length,num_isoforms = raw_isoform_num_exon_dict[isoform_name],isoform_length_dict[isoform_name],num_isoforms_dict[isoform_name]
+                SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+                LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+                f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     with open(output_path+'lr.pkl','wb') as f:
