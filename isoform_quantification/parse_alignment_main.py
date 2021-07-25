@@ -1,6 +1,6 @@
 from parse_alignment import map_read,parse_read_line
 from patch_mp import patch_mp_connection_bpo_17560
-
+from parse_annotation_main import check_valid_region
 from collections import defaultdict
 import traceback
 from operator import itemgetter, attrgetter
@@ -254,24 +254,53 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     # mapping_pkl_file.close()
         
     if (long_read):
+        gene_full_length_region_dict = defaultdict(lambda:{})
+        for rname in gene_regions_dict:
+            for gname in gene_regions_dict[rname]:
+                regions_set = set()
+                isoform_region_dict = defaultdict(lambda:set())
+                for region in gene_regions_dict[rname][gname]:
+                    for isoform in gene_regions_dict[rname][gname][region]:
+                        isoform_region_dict[isoform].add(region)
+                for isoform in isoform_region_dict:
+                    max_region_exon_num = 0
+                    longest_region = ''
+                    for region in isoform_region_dict[isoform]:
+                        region_exon_num = region.count(':')
+                        if max_region_exon_num < region_exon_num:
+                            max_region_exon_num = region_exon_num
+                            longest_region = region
+                    for region in isoform_region_dict[isoform]:
+                        region_exon_num = region.count(':')
+                        if region_exon_num == max_region_exon_num:
+                            regions_set.add(region)
+                gene_full_length_region_dict[rname][gname] = regions_set
         for chr in gene_regions_read_length.copy():
-            for gene in gene_regions_read_length[chr].copy():
+            for gene in gene_regions_read_length[chr].copy():         
                 region_lens = []
                 for region in gene_regions_read_length[chr][gene]:
                     if gene_regions_read_count[chr][gene][region] > 0:
-                        region_lens.append(gene_regions_read_length[chr][gene][region])
+                        region_lens += gene_regions_read_length[chr][gene][region]
+                
+                # if len(region_lens) == 0:
+                #     del gene_regions_read_length[chr][gene]
+                #     del gene_regions_read_count[chr][gene]
+                # else:
                 if len(region_lens) == 0:
-                    del gene_regions_read_length[chr][gene]
-                    del gene_regions_read_count[chr][gene]
+                    for region in gene_regions_read_length[chr][gene].copy():
+                        if region not in gene_full_length_region_dict[chr][gene]:
+                            del gene_regions_read_length[chr][gene][region]
+                            del gene_regions_read_count[chr][gene][region]
                 else:
                     min_region_len = min(region_lens)
                     for region in gene_regions_read_length[chr][gene].copy():
-                        if gene_regions_read_length[chr][gene][region] < min_region_len:
-                            del gene_regions_read_length[chr][gene][region]
-                            del gene_regions_read_count[chr][gene][region]
-                    if len(gene_regions_read_length[chr][gene]) == 0:
-                        del gene_regions_read_length[chr][gene]
-                        del gene_regions_read_count[chr][gene]
+                        if genes_regions_len_dict[chr][gene][region] < min_region_len:
+                            if region not in gene_full_length_region_dict[chr][gene]:
+                                del gene_regions_read_length[chr][gene][region]
+                                del gene_regions_read_count[chr][gene][region]
+                if len(gene_regions_read_length[chr][gene]) == 0:
+                    del gene_regions_read_length[chr][gene]
+                    del gene_regions_read_count[chr][gene]
             if len(gene_regions_read_length[chr]) == 0:
                 del gene_regions_read_length[chr]
                 del gene_regions_read_count[chr]

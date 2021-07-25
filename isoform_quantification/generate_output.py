@@ -5,25 +5,25 @@ import io
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict] = info_dict_list
-    # out_dict = short_read_gene_matrix_dict.copy()
-    # bio = io.BytesIO()
-    # for chr in out_dict:
-    #     for gene in out_dict[chr]:
-    #         bio.write(str.encode('{}\n'.format(gene)))
-    #         np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    out_dict = short_read_gene_matrix_dict.copy()
+    bio = io.BytesIO()
+    for chr in out_dict:
+        for gene in out_dict[chr]:
+            bio.write(str.encode('{}\n'.format(gene)))
+            np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    # mystr = bio.getvalue().decode('latin1')
-    # with open(output_path+'/sr_A.out','w') as f:
-    #     f.write(mystr)
-    # bio = io.BytesIO()
-    # for chr in long_read_gene_matrix_dict:
-    #     for gene in long_read_gene_matrix_dict[chr]:
-    #         bio.write(str.encode('{}\n'.format(gene)))
-    #         np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    mystr = bio.getvalue().decode('latin1')
+    with open(output_path+'/sr_A.out','w') as f:
+        f.write(mystr)
+    bio = io.BytesIO()
+    for chr in long_read_gene_matrix_dict:
+        for gene in long_read_gene_matrix_dict[chr]:
+            bio.write(str.encode('{}\n'.format(gene)))
+            np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    # mystr = bio.getvalue().decode('latin1')
-    # with open(output_path+'/lr_A.out','w') as f:
-    #     f.write(mystr)
+    mystr = bio.getvalue().decode('latin1')
+    with open(output_path+'/lr_A.out','w') as f:
+        f.write(mystr)
     list_of_all_genes_chrs = []
     for chr_name in long_read_gene_matrix_dict:
         if chr_name in short_read_gene_matrix_dict:

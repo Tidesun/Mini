@@ -158,7 +158,7 @@ def estimate_isoform_expression_single_gene(args):
 #         except ValueError as e:
 #             print("Error encountered for gene {} :{}".format(gene_name,e))
 #     return per_chr_gene_isoform_expression_dict
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
+def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=0):
     start_time = time.time()
     print('Preprocessing...')
     LR_gene_read_min_len_dict = None
@@ -182,6 +182,8 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     print('Constructing matrix and calculating condition number...')
     short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,SR_gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,SR_genes_regions_len_dict,num_SRs,region_expression_calculation_method)
     long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method)
+    with open('{}/lr.pkl'.format(output_path),'wb') as f:
+        pickle.dump((gene_points_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict),f)
     raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict = defaultdict(dict),defaultdict(dict),defaultdict(dict)
     raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict = {},{},{}
     for chr_name in raw_isoform_exons_dict:
