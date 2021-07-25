@@ -277,27 +277,41 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                 gene_full_length_region_dict[rname][gname] = regions_set
         for chr in gene_regions_read_length.copy():
             for gene in gene_regions_read_length[chr].copy():         
-                region_lens = []
-                for region in gene_regions_read_length[chr][gene]:
-                    if gene_regions_read_count[chr][gene][region] > 0:
-                        region_lens += gene_regions_read_length[chr][gene][region]
+                # region_lens = []
+                for region in gene_regions_read_length[chr][gene].copy():
+                    if gene_regions_read_count[chr][gene][region] == 0:
+                        if region not in gene_full_length_region_dict[chr][gene]:
+                            del gene_regions_read_length[chr][gene][region]
+                            del gene_regions_read_count[chr][gene][region]
+
+                        
+                        # if genes_regions_len_dict[chr][gene][region] < min_region_len:
+
+                        #     min_region_len = min(region_lens)
+                        #     for region in gene_regions_read_length[chr][gene].copy():
+                        #         if genes_regions_len_dict[chr][gene][region] < min_region_len:
+                        #             # if region not in gene_full_length_region_dict[chr][gene]:
+                        #             del gene_regions_read_length[chr][gene][region]
+                        #             del gene_regions_read_count[chr][gene][region]
+
+                        # region_lens += gene_regions_read_length[chr][gene][region]
                 
                 # if len(region_lens) == 0:
                 #     del gene_regions_read_length[chr][gene]
                 #     del gene_regions_read_count[chr][gene]
                 # else:
-                if len(region_lens) == 0:
-                    for region in gene_regions_read_length[chr][gene].copy():
-                        if region not in gene_full_length_region_dict[chr][gene]:
-                            del gene_regions_read_length[chr][gene][region]
-                            del gene_regions_read_count[chr][gene][region]
-                else:
-                    min_region_len = min(region_lens)
-                    for region in gene_regions_read_length[chr][gene].copy():
-                        if genes_regions_len_dict[chr][gene][region] < min_region_len:
-                            if region not in gene_full_length_region_dict[chr][gene]:
-                                del gene_regions_read_length[chr][gene][region]
-                                del gene_regions_read_count[chr][gene][region]
+                # if len(region_lens) == 0:
+                #     for region in gene_regions_read_length[chr][gene].copy():
+                #         if region not in gene_full_length_region_dict[chr][gene]:
+                #             del gene_regions_read_length[chr][gene][region]
+                #             del gene_regions_read_count[chr][gene][region]
+                # else:
+                #     min_region_len = min(region_lens)
+                #     for region in gene_regions_read_length[chr][gene].copy():
+                #         if genes_regions_len_dict[chr][gene][region] < min_region_len:
+                #             # if region not in gene_full_length_region_dict[chr][gene]:
+                #             del gene_regions_read_length[chr][gene][region]
+                #             del gene_regions_read_count[chr][gene][region]
                 if len(gene_regions_read_length[chr][gene]) == 0:
                     del gene_regions_read_length[chr][gene]
                     del gene_regions_read_count[chr][gene]
