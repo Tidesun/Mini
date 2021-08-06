@@ -5,11 +5,9 @@ dill==0.3.3
 ecos==2.0.7.post1
 intervaltree==3.1.0
 kiwisolver==1.3.1
-matplotlib==3.4.2
-memory-profiler==0.58.0
 numpy==1.17.2
 osqp==0.6.2.post0
-pandas==1.2.4
+pandas==1.1.5
 Pillow==8.2.0
 psutil==5.8.0
 pyparsing==2.4.7
@@ -20,7 +18,7 @@ qdldl==0.1.5.post0
 qpsolvers==1.4
 qpth==0.0.15
 quadprog==0.1.8
-scipy==1.7.1
+scipy==1.5.4
 scs==2.1.4
 six==1.16.0
 sortedcontainers==2.3.0
