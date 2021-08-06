@@ -94,7 +94,7 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
     return gene_regions_read_count,gene_regions_read_length,num_mapped_lines
 
 # @profile
-def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,long_read,threads,delta_s_thres_length=0,delta_s_thres_num_exons=0,threshold=0):
+def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,long_read,filtering,threads):
     patch_mp_connection_bpo_17560()
     start_t = time.time()
     manager = mp.Manager()
@@ -278,16 +278,6 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                         if region_exon_num == max_region_exon_num:
                             regions_set.add(region)
                 gene_full_length_region_dict[rname][gname] = regions_set
-        gene_read_length_dict = {}
-        for rname in gene_regions_read_length.copy():
-            for gname in gene_regions_read_length[rname].copy():
-                gene_lengths = []
-                for region in gene_regions_read_length[rname][gname]:
-                    gene_lengths += gene_regions_read_length[rname][gname][region]
-                if len(gene_lengths) != 0:
-                    gene_read_length_dict[gname] = np.quantile(gene_lengths,threshold)
-                else:
-                    gene_read_length_dict[gname] = 0
         filtered_gene_regions_read_length = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:[])))
         for rname in gene_regions_read_length.copy():
             for gname in gene_regions_read_length[rname].copy():    
@@ -300,11 +290,12 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                         # if read_length < gene_read_length_dict[gname]:
                         #     is_valid_read = False
                         #     filtered_gene_regions_read_length[rname][gname][region].append(read_length)
-                        for isoform in gene_regions_dict[rname][gname][region]:
-                            if (isoform_max_num_exons_dict[isoform] - region_exon_num  > delta_s_thres_num_exons) or (read_length / gene_isoforms_length_dict[rname][gname][isoform] <= delta_s_thres_length):
-                                    is_valid_read = False
-                                    filtered_gene_regions_read_length[rname][gname][region].append(read_length)
-                                    break
+                        if (filtering):
+                            for isoform in gene_regions_dict[rname][gname][region]:
+                                if (isoform_max_num_exons_dict[isoform] - region_exon_num  > 7) and (read_length / gene_isoforms_length_dict[rname][gname][isoform] <= 0.2):
+                                        is_valid_read = False
+                                        filtered_gene_regions_read_length[rname][gname][region].append(read_length)
+                                        break
                         if (is_valid_read):
                             read_length_list.append(read_length)
                     gene_regions_read_length[rname][gname][region] = read_length_list
