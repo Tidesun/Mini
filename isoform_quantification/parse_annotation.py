@@ -158,6 +158,14 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
     #         isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN))
     return isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict
 #######################
+def same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
+    if len(raw_isoform_exons_dict[isoform_A]['start_pos']) == len(raw_isoform_exons_dict[isoform_B]['start_pos']):
+        for i in range(len(raw_isoform_exons_dict[isoform_A]['start_pos'])):
+            if raw_isoform_exons_dict[isoform_A]['start_pos'][i] != raw_isoform_exons_dict[isoform_B]['start_pos'][i] or raw_isoform_exons_dict[isoform_B]['end_pos'][i] != raw_isoform_exons_dict[isoform_B]['end_pos'][i]:
+                return False
+        return True
+    else:
+        return False
 def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
     #gene_points_dict store the index of the point value in ascending order for each gene
     file_read = open(ref_annotation_path, 'r')
@@ -183,20 +191,22 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         end_pos = int(fields[4])
         if start_pos >= end_pos:
             continue
-        if chr_name in gene_exons_dict:
-            if gene_name in gene_exons_dict[chr_name]:
-                if (start_pos,end_pos) in gene_exons_dict[chr_name][gene_name]:
-                    continue
+        # if chr_name in gene_exons_dict:
+        #     if gene_name in gene_exons_dict[chr_name]:
+        #         if (start_pos,end_pos) in gene_exons_dict[chr_name][gene_name]:
+        #             continue
         #initialize dict
         if chr_name not in gene_exons_dict:
             gene_exons_dict[chr_name],gene_points_dict[chr_name],gene_isoforms_dict[chr_name],gene_isoforms_length_dict[chr_name],raw_isoform_exons_dict[chr_name] = {},{},{},{},{}
         if gene_name not in gene_exons_dict[chr_name]:
             gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],gene_isoforms_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],raw_isoform_exons_dict[chr_name][gene_name]= set(),{},[],{},{}
         gene_exons_dict[chr_name][gene_name].add((start_pos, end_pos))
+
         if isoform_name not in gene_isoforms_length_dict[chr_name][gene_name]:
             gene_isoforms_length_dict[chr_name][gene_name][isoform_name] = 0
             raw_isoform_exons_dict[chr_name][gene_name][isoform_name] = {'region_pos':[]}
             gene_isoforms_dict[chr_name][gene_name].append(isoform_name)
+        
         # note here the base on both end included in our system
         gene_isoforms_length_dict[chr_name][gene_name][isoform_name] += end_pos - start_pos + 1
         raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos'].append([start_pos,end_pos])
@@ -209,11 +219,22 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
             gene_exons_dict[chr_name][gene_name] = exon_list
     for chr_name in raw_isoform_exons_dict:
         for gene_name in raw_isoform_exons_dict[chr_name]:
-            for isoform_name in raw_isoform_exons_dict[chr_name][gene_name]:
+            for isoform_name in raw_isoform_exons_dict[chr_name][gene_name].copy():
                 region_pos = sorted(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos'],key=itemgetter(0, 1))
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'] = [start_pos for [start_pos,end_pos] in region_pos]
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['end_pos'] = [end_pos for [start_pos,end_pos] in region_pos]
                 del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos']
+    for chr_name in raw_isoform_exons_dict:
+        for gene_name in raw_isoform_exons_dict[chr_name]:
+            isoform_names_to_drop = set()
+            for isoform_A in raw_isoform_exons_dict[chr_name][gene_name]:
+                for isoform_B in raw_isoform_exons_dict[chr_name][gene_name]:
+                    if (isoform_A != isoform_B) and (same_structure_isoform(raw_isoform_exons_dict[chr_name][gene_name],isoform_A,isoform_B)):
+                        isoform_names_to_drop.add(isoform_B)
+            for isoform_name in isoform_names_to_drop:
+                del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]
+                del gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
+                gene_isoforms_dict[chr_name][gene_name].remove(isoform_name)
     raw_gene_exons_dict = gene_exons_dict.copy()
     gene_exons_dict = split_and_sort_exons(gene_exons_dict)
     # index the point position

@@ -31,6 +31,9 @@ def parse_arguments():
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha")
     optional_TransELS.add_argument('--beta',type=str, default='adaptive',help="Beta")
     optional_TransELS.add_argument('--P',type=float, default=1e-6,help="P")
+    optional_TransELS.add_argument('--delta_s_thres_length',type=float, default=0)
+    optional_TransELS.add_argument('--delta_s_thres_num_exons',type=int, default=0)
+    optional_TransELS.add_argument('--threshold',type=float, default=0)
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
     if args.subparser_name == 'TrEESR':
@@ -52,7 +55,7 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
-        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,args.b_cal_method,alpha,beta,args.P,args.threads)
+        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,args.b_cal_method,alpha,beta,args.P,args.threads,args.delta_s_thres_length,args.delta_s_thres_num_exons,args.threshold)
     else:
         parser.print_help()
 if __name__ == "__main__":

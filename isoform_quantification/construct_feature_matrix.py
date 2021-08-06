@@ -11,6 +11,9 @@ def construct_isoform_region_matrix(isoform_region_dict,region_names_indics,isof
     for region_name in isoform_region_dict:
         for isoform_name in isoform_region_dict[region_name]:
             isoform_region_matrix[region_names_indics[region_name],isoform_names_indics[isoform_name]] = 1
+    sum_A = isoform_region_matrix.sum(axis=0)
+    sum_A[sum_A==0] = 1
+    isoform_region_matrix = isoform_region_matrix/sum_A
     return isoform_region_matrix
 
 def construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,region_names_indics,num_LRs,total_long_read_lengths,region_expression_calculation_method):

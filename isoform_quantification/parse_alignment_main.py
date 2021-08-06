@@ -71,12 +71,12 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
             break
         else:
             local_gene_regions_read_count,local_gene_regions_read_length = msg
-            for chr in local_gene_regions_read_count:
-                for gene in local_gene_regions_read_count[chr]:
-                    for region in local_gene_regions_read_count[chr][gene]:
-                        num_mapped_lines += local_gene_regions_read_count[chr][gene][region]
-                        gene_regions_read_count[chr][gene][region] += local_gene_regions_read_count[chr][gene][region]
-                        gene_regions_read_length[chr][gene][region] += local_gene_regions_read_length[chr][gene][region]
+            for rname in local_gene_regions_read_count:
+                for gname in local_gene_regions_read_count[rname]:
+                    for region in local_gene_regions_read_count[rname][gname]:
+                        num_mapped_lines += local_gene_regions_read_count[rname][gname][region]
+                        gene_regions_read_count[rname][gname][region] += local_gene_regions_read_count[rname][gname][region]
+                        gene_regions_read_length[rname][gname][region] += local_gene_regions_read_length[rname][gname][region]
 
             # for mapping in local_all_mappings:
             #     num_lines += 1
@@ -94,7 +94,7 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
     return gene_regions_read_count,gene_regions_read_length,num_mapped_lines
 
 # @profile
-def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,gene_regions_dict,genes_regions_len_dict,long_read,threads):
+def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,long_read,threads,delta_s_thres_length=0,delta_s_thres_num_exons=0,threshold=0):
     patch_mp_connection_bpo_17560()
     start_t = time.time()
     manager = mp.Manager()
@@ -102,34 +102,34 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     gene_regions_read_length ={}
     global filtered_gene_regions_dict
     filtered_gene_regions_dict = defaultdict(lambda: defaultdict(dict))
-    for chr in gene_regions_dict:
-        gene_regions_read_count[chr],gene_regions_read_length[chr] = {},{}
-        for gene in gene_regions_dict[chr]:
-            gene_regions_read_count[chr][gene],gene_regions_read_length[chr][gene] = {},{}
+    for rname in gene_regions_dict:
+        gene_regions_read_count[rname],gene_regions_read_length[rname] = {},{}
+        for gname in gene_regions_dict[rname]:
+            gene_regions_read_count[rname][gname],gene_regions_read_length[rname][gname] = {},{}
             # if (not long_read):
-            #     per_gene_regions_dict = filter_regions(gene_regions_dict[chr][gene],long_read=False)
+            #     per_gene_regions_dict = filter_regions(gene_regions_dict[rname][gname],long_read=False)
             # else:
-            #     per_gene_regions_dict =  filter_regions(gene_regions_dict[chr][gene],long_read=True)
-            per_gene_regions_dict =  gene_regions_dict[chr][gene]
+            #     per_gene_regions_dict =  filter_regions(gene_regions_dict[rname][gname],long_read=True)
+            per_gene_regions_dict =  gene_regions_dict[rname][gname]
             for region in per_gene_regions_dict:
-                gene_regions_read_count[chr][gene][region] = 0
-                gene_regions_read_length[chr][gene][region] = []
-                filtered_gene_regions_dict[chr][gene][region] = True
+                gene_regions_read_count[rname][gname][region] = 0
+                gene_regions_read_length[rname][gname][region] = []
+                filtered_gene_regions_dict[rname][gname][region] = True
     if alignment_file_path == None:
         return gene_regions_read_count,150,0
     # Create sorted end and start positions
     global start_pos_list,end_pos_list,start_gname_list,end_gname_list,CHR_LIST
     start_pos_list,end_pos_list,start_gname_list,end_gname_list,CHR_LIST = dict(),dict(),dict(),dict(),list(gene_range.keys())
     CHR_LIST = list(gene_range.keys())
-    for chr in CHR_LIST:     
+    for rname in CHR_LIST:     
         # Sort based on start position
-        temp_list = sorted(gene_range[chr], key=itemgetter(1))
-        start_pos_list[chr] = [temp_list[j][1] for j in range(len(temp_list))]
-        start_gname_list[chr] = [temp_list[j][0] for j in range(len(temp_list))]
+        temp_list = sorted(gene_range[rname], key=itemgetter(1))
+        start_pos_list[rname] = [temp_list[j][1] for j in range(len(temp_list))]
+        start_gname_list[rname] = [temp_list[j][0] for j in range(len(temp_list))]
         # Sort based on end position
-        temp_list = sorted(gene_range[chr], key=itemgetter(2))
-        end_pos_list[chr] = [temp_list[j][2] for j in range(len(temp_list))]
-        end_gname_list[chr] = [temp_list[j][0] for j in range(len(temp_list))]
+        temp_list = sorted(gene_range[rname], key=itemgetter(2))
+        end_pos_list[rname] = [temp_list[j][2] for j in range(len(temp_list))]
+        end_gname_list[rname] = [temp_list[j][0] for j in range(len(temp_list))]
     global points_dict,interval_tree_dict
     points_dict,interval_tree_dict = gene_points_dict,gene_interval_tree_dict
     map_f = map_read
@@ -174,10 +174,10 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     pool.close()
     pool.join()
     read_lens = []
-    for chr in gene_regions_read_length:
-        for gene in gene_regions_read_length[chr]:
-            for region in gene_regions_read_length[chr][gene]:
-                read_lens += gene_regions_read_length[chr][gene][region]
+    for rname in gene_regions_read_length:
+        for gname in gene_regions_read_length[rname]:
+            for region in gene_regions_read_length[rname][gname]:
+                read_lens += gene_regions_read_length[rname][gname][region]
     # MAX_BUFF_LINES_IN_MEM = 1e5
     # with open(alignment_file_path, 'r') as aln_file:
     #     aln_lines = []
@@ -254,7 +254,9 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
     # mapping_pkl_file.close()
         
     if (long_read):
+        num_long_reads = 0
         gene_full_length_region_dict = defaultdict(lambda:{})
+        isoform_max_num_exons_dict = {}
         for rname in gene_regions_dict:
             for gname in gene_regions_dict[rname]:
                 regions_set = set()
@@ -270,55 +272,85 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                         if max_region_exon_num < region_exon_num:
                             max_region_exon_num = region_exon_num
                             longest_region = region
+                    isoform_max_num_exons_dict[isoform] = max_region_exon_num
                     for region in isoform_region_dict[isoform]:
                         region_exon_num = region.count(':')
                         if region_exon_num == max_region_exon_num:
                             regions_set.add(region)
                 gene_full_length_region_dict[rname][gname] = regions_set
-        for chr in gene_regions_read_length.copy():
-            for gene in gene_regions_read_length[chr].copy():         
+        gene_read_length_dict = {}
+        for rname in gene_regions_read_length.copy():
+            for gname in gene_regions_read_length[rname].copy():
+                gene_lengths = []
+                for region in gene_regions_read_length[rname][gname]:
+                    gene_lengths += gene_regions_read_length[rname][gname][region]
+                if len(gene_lengths) != 0:
+                    gene_read_length_dict[gname] = np.quantile(gene_lengths,threshold)
+                else:
+                    gene_read_length_dict[gname] = 0
+        filtered_gene_regions_read_length = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:[])))
+        for rname in gene_regions_read_length.copy():
+            for gname in gene_regions_read_length[rname].copy():    
                 # region_lens = []
-                for region in gene_regions_read_length[chr][gene].copy():
-                    if gene_regions_read_count[chr][gene][region] == 0:
-                        if region not in gene_full_length_region_dict[chr][gene]:
-                            del gene_regions_read_length[chr][gene][region]
-                            del gene_regions_read_count[chr][gene][region]
+                for region in gene_regions_read_length[rname][gname].copy():
+                    region_exon_num = region.count(':')
+                    read_length_list = []
+                    for read_length in gene_regions_read_length[rname][gname][region]:
+                        is_valid_read = True
+                        # if read_length < gene_read_length_dict[gname]:
+                        #     is_valid_read = False
+                        #     filtered_gene_regions_read_length[rname][gname][region].append(read_length)
+                        for isoform in gene_regions_dict[rname][gname][region]:
+                            if (isoform_max_num_exons_dict[isoform] - region_exon_num  > delta_s_thres_num_exons) or (read_length / gene_isoforms_length_dict[rname][gname][isoform] <= delta_s_thres_length):
+                                    is_valid_read = False
+                                    filtered_gene_regions_read_length[rname][gname][region].append(read_length)
+                                    break
+                        if (is_valid_read):
+                            read_length_list.append(read_length)
+                    gene_regions_read_length[rname][gname][region] = read_length_list
+                    gene_regions_read_count[rname][gname][region] = len(read_length_list)
+                    num_long_reads += len(read_length_list)
+
+                    if gene_regions_read_count[rname][gname][region] == 0:
+                        if region not in gene_full_length_region_dict[rname][gname]:
+                            del gene_regions_read_length[rname][gname][region]
+                            del gene_regions_read_count[rname][gname][region]
 
                         
-                        # if genes_regions_len_dict[chr][gene][region] < min_region_len:
+                        # if genes_regions_len_dict[rname][gname][region] < min_region_len:
 
                         #     min_region_len = min(region_lens)
-                        #     for region in gene_regions_read_length[chr][gene].copy():
-                        #         if genes_regions_len_dict[chr][gene][region] < min_region_len:
-                        #             # if region not in gene_full_length_region_dict[chr][gene]:
-                        #             del gene_regions_read_length[chr][gene][region]
-                        #             del gene_regions_read_count[chr][gene][region]
+                        #     for region in gene_regions_read_length[rname][gname].copy():
+                        #         if genes_regions_len_dict[rname][gname][region] < min_region_len:
+                        #             # if region not in gene_full_length_region_dict[rname][gname]:
+                        #             del gene_regions_read_length[rname][gname][region]
+                        #             del gene_regions_read_count[rname][gname][region]
 
-                        # region_lens += gene_regions_read_length[chr][gene][region]
+                        # region_lens += gene_regions_read_length[rname][gname][region]
                 
                 # if len(region_lens) == 0:
-                #     del gene_regions_read_length[chr][gene]
-                #     del gene_regions_read_count[chr][gene]
+                #     del gene_regions_read_length[rname][gname]
+                #     del gene_regions_read_count[rname][gname]
                 # else:
                 # if len(region_lens) == 0:
-                #     for region in gene_regions_read_length[chr][gene].copy():
-                #         if region not in gene_full_length_region_dict[chr][gene]:
-                #             del gene_regions_read_length[chr][gene][region]
-                #             del gene_regions_read_count[chr][gene][region]
+                #     for region in gene_regions_read_length[rname][gname].copy():
+                #         if region not in gene_full_length_region_dict[rname][gname]:
+                #             del gene_regions_read_length[rname][gname][region]
+                #             del gene_regions_read_count[rname][gname][region]
                 # else:
                 #     min_region_len = min(region_lens)
-                #     for region in gene_regions_read_length[chr][gene].copy():
-                #         if genes_regions_len_dict[chr][gene][region] < min_region_len:
-                #             # if region not in gene_full_length_region_dict[chr][gene]:
-                #             del gene_regions_read_length[chr][gene][region]
-                #             del gene_regions_read_count[chr][gene][region]
-                if len(gene_regions_read_length[chr][gene]) == 0:
-                    del gene_regions_read_length[chr][gene]
-                    del gene_regions_read_count[chr][gene]
-            if len(gene_regions_read_length[chr]) == 0:
-                del gene_regions_read_length[chr]
-                del gene_regions_read_count[chr]
-        return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_mapped_lines
+                #     for region in gene_regions_read_length[rname][gname].copy():
+                #         if genes_regions_len_dict[rname][gname][region] < min_region_len:
+                #             # if region not in gene_full_length_region_dict[rname][gname]:
+                #             del gene_regions_read_length[rname][gname][region]
+                #             del gene_regions_read_count[rname][gname][region]
+                if len(gene_regions_read_length[rname][gname]) == 0:
+                    del gene_regions_read_length[rname][gname]
+                    del gene_regions_read_count[rname][gname]
+            if len(gene_regions_read_length[rname]) == 0:
+                del gene_regions_read_length[rname]
+                del gene_regions_read_count[rname]
+        return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length
     else:
         SR_read_len = 150
         return gene_regions_read_count,SR_read_len,num_mapped_lines
