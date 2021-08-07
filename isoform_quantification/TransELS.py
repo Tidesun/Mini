@@ -23,8 +23,10 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     print('Start parsing annoation...')
     if short_read_alignment_file_path is not None:
         with pysam.AlignmentFile(short_read_alignment_file_path, "r") as samfile:
-            for read in samfile.head(1):
+            for read in samfile:
                 READ_LEN = read.infer_query_length()
+                if READ_LEN is not None:
+                    break
     gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict)
     gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
     end_time_1 = time.time()
