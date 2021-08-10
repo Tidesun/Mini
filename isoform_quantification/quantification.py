@@ -9,6 +9,8 @@ def normalize_expression(gene_isoform_expression_dict):
     LR_isoform_expression_sum = 0
     for chr_name in gene_isoform_expression_dict:
         for gene_name in gene_isoform_expression_dict[chr_name]:
+            gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_expected_counts'] = gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts']
+            gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_expected_counts'] = gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression']
             SR_isoform_expression_sum += gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'].sum()
             LR_isoform_expression_sum += gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'].sum()
 
@@ -40,8 +42,8 @@ def estimate_isoform_expression_grid_search_iteration(args,params):
     # lb = np.zeros(num_isoforms)
     # G = - np.concatenate((SR_isoform_region_matrix[SR_region_read_count_matrix>0,:], LR_isoform_region_matrix[LR_region_read_count_matrix>0,:]), axis=0)
     # h = - np.ones(G.shape[0])/(1/P)
-    isoform_expression = solve_qp(Q, c,G,h, lb = lb)
-    # isoform_expression = solve_qp(Q, c,lb = lb)
+    # isoform_expression = solve_qp(Q, c,G,h, lb = lb)
+    isoform_expression = solve_qp(Q, c,lb = lb)
     # if ((isoform_expression+1e-6<0).any()):
     #     raise ValueError('Obtain negative value for isoform expression')
     isoform_expression[isoform_expression<0] = 0
@@ -54,27 +56,21 @@ def estimate_isoform_expression_grid_search_iteration(args,params):
 def estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,SR_gene_counts,alpha,beta,P,model):
     num_isoforms = SR_isoform_region_matrix.shape[1]
     if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
-        return np.zeros(num_isoforms),np.zeros(num_isoforms),0.5
-    min_target = float('inf')
-    best_params = None
-    best_isoform_expression = np.zeros(num_isoforms)
-    best_perfect_isoform_expression = np.zeros(num_isoforms)
+        return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),0.5
     if (alpha == 'adaptive' or beta == 'adaptive'):
         pred_alpha,pred_beta = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,model)
     if (alpha == 'adaptive'):
         # alpha_selections = [i/20 for i in range(20)]
-        alpha_selections = [pred_alpha]
+        selected_alpha = pred_alpha
     else:
-        alpha_selections = [alpha]
+        selected_alpha = alpha
     if (beta == 'adaptive'):
         # beta_selections = [10**(-i) for i in range(1,10)]
-        beta_selections = [pred_beta]
+        selected_beta = pred_beta
     else:
-        beta_selections = [beta]
-    # params_grid =[{'alpha':alpha,'beta':beta} for alpha in alpha_selections for beta in beta_selections]
+        selected_beta = beta
     args = (SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P)
-    # params = params_grid[0]
-    params = {'alpha':alpha_selections[0],'beta':beta_selections[0]}
+    params = {'alpha':selected_alpha,'beta':selected_beta}
     # for params in params_grid:
     isoform_expression,_, _ = estimate_isoform_expression_grid_search_iteration(args,params)
     if isoform_expression.sum() != 0:
@@ -82,10 +78,11 @@ def estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_ma
     SR_expression = isoform_lengths * isoform_expression
     if SR_expression.sum() != 0:
         SR_expression = SR_expression/SR_expression.sum()
-    SR_isoform_expression = SR_gene_counts * SR_expression / isoform_lengths
+    SR_expected_counts = SR_gene_counts * SR_expression
+    SR_isoform_expression = SR_expected_counts / isoform_lengths
 
     LR_isoform_expression = LR_region_read_count_matrix.sum() * isoform_expression
-    return SR_isoform_expression,LR_isoform_expression,params['alpha']
+    return SR_isoform_expression,SR_expected_counts,LR_isoform_expression,params['alpha']
 def estimate_isoform_expression_single_gene(args):
     (short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P,model) = args
     SR_isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix']
@@ -102,7 +99,7 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
     print('Calculating the isoform expression...')
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     if (alpha == 'adaptive' or beta == 'adaptive'):
-        model = load_model()
+        model = load_model('model_10.pt')
     else:
         model = None
     list_of_all_genes_chrs = []
@@ -115,9 +112,8 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
     for (gene_name,chr_name), args in zip(list_of_all_genes_chrs, list_of_args):
         try:
             result = estimate_isoform_expression_single_gene(args)
-            gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = result
+            gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts'],gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = result
         except Exception as e:
             print(e)
-            raise e
     gene_isoform_tpm_expression_dict = normalize_expression(gene_isoform_expression_dict)
     return gene_isoform_tpm_expression_dict,list_of_all_genes_chrs
