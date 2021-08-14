@@ -19,6 +19,8 @@ optional arguments:
 required named arguments for TrEESR:
   -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
                         The path of annotation file
+  -lrsam LONG_READ_SAM_PATH, --long_read_sam_path LONG_READ_SAM_PATH
+                        The path of long read sam file
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
                         The path of output directory
 
