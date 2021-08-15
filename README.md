@@ -27,6 +27,9 @@ required named arguments for TrEESR:
 optional arguments:
   -t THREADS, --threads THREADS
                         Number of threads
+  --sr_region_selection SR_REGION_SELECTION
+                        SR region selection methods
+                        [default:read_length][read_length,num_exons]
 ```
 ## TransELS
 ```
