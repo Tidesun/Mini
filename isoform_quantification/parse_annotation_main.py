@@ -64,7 +64,7 @@ def check_valid_region(chr_name,gene_name,region_name,genes_regions_len_dict,max
             is_region_valid = True
     return is_region_valid
 
-def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None,LR_gene_read_min_len_dict=None):
+def filter_regions_read_length(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None):
     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
     for chr_name in gene_regions_dict:
@@ -78,7 +78,7 @@ def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,REA
                     new_gene_regions_dict[chr_name][gene_name][region_name] = gene_regions_dict[chr_name][gene_name][region_name]
                     new_genes_regions_len_dict[chr_name][gene_name][region_name] = genes_regions_len_dict[chr_name][gene_name][region_name]
     return new_gene_regions_dict,new_genes_regions_len_dict
-def filter_regions(gene_regions_dict,genes_regions_len_dict):
+def filter_regions_num_exons(gene_regions_dict,genes_regions_len_dict):
     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
     for rname in gene_regions_dict:
@@ -157,11 +157,13 @@ def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
                         
 
 
-def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict):
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection='num_exons'):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
         _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
-    # SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
-    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,genes_regions_len_dict)
+    if sr_region_selection == 'read_length':
+        SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_read_length(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150)
+    elif sr_region_selection == 'num_exons':
+        SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_num_exons(gene_regions_dict,genes_regions_len_dict)
     LR_gene_regions_dict,LR_genes_regions_len_dict = gene_regions_dict,genes_regions_len_dict
     # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_long_read_regions(gene_regions_dict,genes_regions_len_dict)
     for chr_name in gene_points_dict:

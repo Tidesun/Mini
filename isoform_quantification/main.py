@@ -20,6 +20,7 @@ def parse_arguments():
     requiredNamed_TrEESR.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
     optional_TrEESR = parser_TrEESR.add_argument_group('optional arguments')
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
+    optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for TrEESR')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -35,7 +36,7 @@ def parse_arguments():
     args = parser.parse_args()
     if args.subparser_name == 'TrEESR':
         print('Using TrEESR')
-        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.threads)
+        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.threads)
     elif args.subparser_name == 'TransELS':
         print('Using TransELS')
         if (args.alpha == 'adaptive'):
