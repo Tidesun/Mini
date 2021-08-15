@@ -52,6 +52,8 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
+        if (args.short_read_sam_path is None):
+            args.alpha = 1.0
         TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,'original',alpha,beta,1e-6,args.filtering,args.threads)
     else:
         parser.print_help()

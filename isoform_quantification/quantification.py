@@ -14,13 +14,18 @@ def normalize_expression(gene_isoform_expression_dict):
             SR_isoform_expression_sum += gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'].sum()
             LR_isoform_expression_sum += gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'].sum()
 
-            
+    if SR_isoform_expression_sum == 0:
+        SR_isoform_expression_sum = 1
+    if LR_isoform_expression_sum == 0:
+        LR_isoform_expression_sum = 1 
     for chr_name in gene_isoform_expression_dict:
         for gene_name in gene_isoform_expression_dict[chr_name]:
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm'] = gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'] * 1e6 / SR_isoform_expression_sum
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm'] = gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'] * 1e6 / LR_isoform_expression_sum
             alpha = gene_isoform_expression_dict[chr_name][gene_name]['alpha']
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['tpm'] = (1 - alpha) * gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm'] + alpha * gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm']
+            if gene_name == 'ENSDARG00000114503':
+                print(gene_isoform_tpm_expression_dict[chr_name][gene_name])
     return gene_isoform_tpm_expression_dict 
 def estimate_isoform_expression_grid_search_iteration(args,params):
     (SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P) = args

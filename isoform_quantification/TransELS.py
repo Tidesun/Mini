@@ -20,7 +20,7 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     LR_gene_read_min_len_dict = None
     # LR_gene_read_min_len_dict = get_long_read_gene_distribution(ref_file_path,long_read_alignment_file_path)
     # print(LR_gene_read_min_len_dict)
-    print('Start parsing annoation...')
+    print('Start parsing annotation...')
     if short_read_alignment_file_path is not None:
         with pysam.AlignmentFile(short_read_alignment_file_path, "r") as samfile:
             for read in samfile:
