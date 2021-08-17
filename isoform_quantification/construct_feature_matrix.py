@@ -6,14 +6,15 @@ def construct_index(region_names,isoform_names):
     isoform_names_indics = {x:i for i,x in enumerate(isoform_names)}
     return region_names_indics,isoform_names_indics
 
-def construct_isoform_region_matrix(isoform_region_dict,region_names_indics,isoform_names_indics):
+def construct_isoform_region_matrix(isoform_region_dict,region_names_indics,isoform_names_indics,normalize_A=True):
     isoform_region_matrix = np.zeros((len(region_names_indics),len(isoform_names_indics)))
     for region_name in isoform_region_dict:
         for isoform_name in isoform_region_dict[region_name]:
             isoform_region_matrix[region_names_indics[region_name],isoform_names_indics[isoform_name]] = 1
-    sum_A = isoform_region_matrix.sum(axis=0)
-    sum_A[sum_A==0] = 1
-    isoform_region_matrix = isoform_region_matrix/sum_A
+    if normalize_A:
+        sum_A = isoform_region_matrix.sum(axis=0)
+        sum_A[sum_A==0] = 1
+        isoform_region_matrix = isoform_region_matrix/sum_A
     return isoform_region_matrix
 
 def construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,region_names_indics,num_LRs,total_long_read_lengths,region_expression_calculation_method):
@@ -108,10 +109,10 @@ def get_condition_number(isoform_region_matrix):
 
     singular_value_product = svd_val_max * svd_val_pos_min
     return kvalue,regular_condition_number,generalized_condition_number,singular_value_product
-def calculate_condition_number(region_isoform_dict,isoform_names):
+def calculate_condition_number(region_isoform_dict,isoform_names,normalize_A):
     region_names = region_isoform_dict.keys()
     (region_names_indics,isoform_names_indics) = construct_index(region_names,isoform_names)
-    isoform_region_matrix = construct_isoform_region_matrix(region_isoform_dict,region_names_indics,isoform_names_indics)
+    isoform_region_matrix = construct_isoform_region_matrix(region_isoform_dict,region_names_indics,isoform_names_indics,normalize_A)
     condition_numbers = get_condition_number(isoform_region_matrix)
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
                    'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics}
@@ -144,9 +145,9 @@ def calculate_all_condition_number(gene_isoforms_dict,gene_regions_dict,allow_mu
             #     region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=False)
             # else:
             #     region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)
-            gene_matrix_dict[chr_name][gene_name] = calculate_condition_number(region_isoform_dict,isoform_names)
+            gene_matrix_dict[chr_name][gene_name] = calculate_condition_number(region_isoform_dict,isoform_names,False)
     return gene_matrix_dict
-def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,SR_read_len,gene_region_len_dict,num_SRs,region_expression_calculation_method):
+def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,SR_read_len,gene_region_len_dict,num_SRs,region_expression_calculation_method,normalize_A=True):
     gene_matrix_dict = dict()
     for chr_name in gene_isoforms_dict:
         gene_matrix_dict[chr_name] = dict()
@@ -161,7 +162,7 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
             region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
 
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names)
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,normalize_A)
             matrix_dict['region_eff_length_dict'] = calculate_eff_length(region_len_dict,SR_read_len)
             matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_short_read(region_read_count_dict,matrix_dict['region_eff_length_dict'],matrix_dict['region_names_indics'],num_SRs,region_expression_calculation_method)
             num_SRs_mapped_gene = 0
@@ -171,7 +172,7 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
     return gene_matrix_dict
-def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_regions_read_length,gene_region_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method):
+def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_regions_read_length,gene_region_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method,normalize_A=True):
     gene_matrix_dict = dict()
     for chr_name in gene_regions_read_count:
         gene_matrix_dict[chr_name] = dict()
@@ -192,7 +193,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
             region_read_length = gene_regions_read_length[chr_name][gene_name]
 
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names)
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,normalize_A)
             matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,matrix_dict['region_names_indics'],num_LRs,total_long_read_length,region_expression_calculation_method)
             num_LRs_mapped_gene = 0
             for region in region_read_count_dict:
