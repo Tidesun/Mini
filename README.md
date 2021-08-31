@@ -10,8 +10,10 @@ pip install -r requirements.txt
 ```
 ## TrEESR
 ```
-usage: main.py TrEESR [-h] -gtf GTF_ANNOTATION_PATH -o OUTPUT_PATH
-                      [-t THREADS]
+usage: main.py TrEESR [-h] -gtf GTF_ANNOTATION_PATH -lrsam LONG_READ_SAM_PATH
+                      -o OUTPUT_PATH [-t THREADS]
+                      [--sr_region_selection SR_REGION_SELECTION]
+                      [--filtering FILTERING]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -27,6 +29,12 @@ required named arguments for TrEESR:
 optional arguments:
   -t THREADS, --threads THREADS
                         Number of threads
+  --sr_region_selection SR_REGION_SELECTION
+                        SR region selection methods
+                        [default:read_length][read_length,num_exons]
+  --filtering FILTERING
+                        Whether the very short long reads will be
+                        filtered[default:True][True,False]
 ```
 ## TransELS
 ```
