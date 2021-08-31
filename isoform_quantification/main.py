@@ -29,15 +29,15 @@ def parse_arguments():
     optional_TransELS = parser_TransELS.add_argument_group('optional arguments')
     optional_TransELS.add_argument('-srsam','--short_read_sam_path', type=str, help="The path of short read sam file",default=None)
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
-    optional_TransELS.add_argument('--beta',type=str, default='adaptive',help="Beta[default:adaptive]: L2 regularization parameter")
-    optional_TransELS.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")
+    optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
+    optional_TransELS.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
     if args.subparser_name == 'TrEESR':
         print('Using TrEESR')
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.threads)
     elif args.subparser_name == 'TransELS':
-        print('Using TransELS')
+        print('Using TransELS',flush=True)
         if (args.alpha == 'adaptive'):
             alpha = 'adaptive'
         else:

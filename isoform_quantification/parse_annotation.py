@@ -148,7 +148,7 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
         chunksize, extra = divmod(len(list_of_all_genes_chrs), threads)
         if extra:
             chunksize += 1
-        print('Using {} threads'.format(threads))
+        print('Using {} threads'.format(threads),flush=True)
         with concurrent.futures.ProcessPoolExecutor(max_workers=threads) as executor:
             for (gene_name,chr_name), result in zip(list_of_all_genes_chrs, executor.map(generate_exon_indicator_for_isoform_single_gene,list_of_args,chunksize=chunksize)):
                 isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = result
@@ -236,6 +236,14 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                 del gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
                 gene_isoforms_dict[chr_name][gene_name].remove(isoform_name)
     raw_gene_exons_dict = gene_exons_dict.copy()
+    for chr_name in gene_isoforms_dict:
+        for gene_name in list(gene_isoforms_dict[chr_name].keys()):
+            if len(gene_isoforms_dict[chr_name][gene_name]) == 0 :
+                del gene_exons_dict[chr_name][gene_name]
+                del raw_isoform_exons_dict[chr_name][gene_name]
+                del gene_isoforms_length_dict[chr_name][gene_name]
+                del gene_isoforms_dict[chr_name][gene_name]
+                del gene_points_dict[chr_name][gene_name]
     gene_exons_dict = split_and_sort_exons(gene_exons_dict)
     # index the point position
     for chr_name in gene_exons_dict:

@@ -39,7 +39,7 @@ def parse_alignment_iteration(alignment_file_path,READ_LEN, READ_JUNC_MIN_MAP_LE
                     start_pos_list, start_gname_list, end_pos_list, end_gname_list,
                     READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST,aln_line)
                 if (mapping['read_mapped']):
-                    for mapping_area in [random.choice(mapping['mapping_area'])]:
+                    for mapping_area in mapping['mapping_area']:
                         rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
                         if rname not in local_gene_regions_read_count:
                             local_gene_regions_read_count[rname],local_gene_regions_read_length[rname] = {},{}

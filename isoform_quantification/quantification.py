@@ -24,8 +24,6 @@ def normalize_expression(gene_isoform_expression_dict):
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm'] = gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'] * 1e6 / LR_isoform_expression_sum
             alpha = gene_isoform_expression_dict[chr_name][gene_name]['alpha']
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['tpm'] = (1 - alpha) * gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm'] + alpha * gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm']
-            if gene_name == 'ENSDARG00000114503':
-                print(gene_isoform_tpm_expression_dict[chr_name][gene_name])
     return gene_isoform_tpm_expression_dict 
 def estimate_isoform_expression_grid_search_iteration(args,params):
     (SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P) = args
@@ -101,7 +99,7 @@ def estimate_isoform_expression_single_gene(args):
         isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
     return estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,SR_gene_counts,alpha,beta,P,model)
 def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P):
-    print('Calculating the isoform expression...')
+    print('Calculating the isoform expression...',flush=True)
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     if (alpha == 'adaptive' or beta == 'adaptive'):
         model = load_model('model_10.pt')

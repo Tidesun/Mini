@@ -53,8 +53,8 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
                 f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
-    with open(output_path+'lr.pkl','wb') as f:
-        pickle.dump(long_read_gene_matrix_dict,f)
+    # with open(output_path+'lr.pkl','wb') as f:
+    #     pickle.dump(long_read_gene_matrix_dict,f)
     with open(output_path+"/expression_gene.out",'w') as f_gene:
         with open(output_path+"/expression_isoform.out",'w') as f_isoform:
             f_gene.write('Gene\tChr\tTPM\tSR_expected_counts\tLR_expected_counts\n')

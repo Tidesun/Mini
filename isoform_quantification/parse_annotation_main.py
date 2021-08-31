@@ -21,7 +21,7 @@ def calculate_exon_min_read_mapped_length(exon_region_name,point_dict,exon_posit
     elif exon_position == 'right':
         return point_dict[points[-2]] - point_dict[points[0]] + 1 + 1
     elif exon_position == 'center':
-        return point_dict[points[-2]] - point_dict[points[1]] + 2 + 1 
+        return point_dict[points[-2]] - point_dict[points[1]] + 2 + 1       
 def check_valid_region(chr_name,gene_name,region_name,genes_regions_len_dict,max_read_len,min_read_len,point_dict,READ_JUNC_MIN_MAP_LEN):
     is_region_valid = False
     if (genes_regions_len_dict[chr_name][gene_name][region_name] > min_read_len):              
@@ -63,7 +63,6 @@ def check_valid_region(chr_name,gene_name,region_name,genes_regions_len_dict,max
         else:
             is_region_valid = True
     return is_region_valid
-
 def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,min_read_len,max_read_len=None,LR_gene_read_min_len_dict=None):
     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
@@ -78,19 +77,19 @@ def filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,REA
                     new_gene_regions_dict[chr_name][gene_name][region_name] = gene_regions_dict[chr_name][gene_name][region_name]
                     new_genes_regions_len_dict[chr_name][gene_name][region_name] = genes_regions_len_dict[chr_name][gene_name][region_name]
     return new_gene_regions_dict,new_genes_regions_len_dict
-def filter_regions(gene_regions_dict,genes_regions_len_dict):
-    new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
-    new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
-    for rname in gene_regions_dict:
-        for gname in gene_regions_dict[rname]:
-            regions_set = set()
-            for region in gene_regions_dict[rname][gname]:
-                if check_region_type(region) in ['one_exon','one_junction']:
-                    regions_set.add(region)
-            for region_name in regions_set:
-                new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
-                new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
-    return new_gene_regions_dict,new_genes_regions_len_dict
+# def filter_regions(gene_regions_dict,genes_regions_len_dict):
+#     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
+#     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
+#     for rname in gene_regions_dict:
+#         for gname in gene_regions_dict[rname]:
+#             regions_set = set()
+#             for region in gene_regions_dict[rname][gname]:
+#                 if check_region_type(region) in ['one_exon','one_junction']:
+#                     regions_set.add(region)
+#             for region_name in regions_set:
+#                 new_gene_regions_dict[rname][gname][region_name] = gene_regions_dict[rname][gname][region_name]
+#                 new_genes_regions_len_dict[rname][gname][region_name] = genes_regions_len_dict[rname][gname][region_name]
+#     return new_gene_regions_dict,new_genes_regions_len_dict
 # def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
 #     new_gene_regions_dict = defaultdict(lambda:defaultdict(dict))
 #     new_genes_regions_len_dict = defaultdict(lambda:defaultdict(dict))
@@ -160,8 +159,8 @@ def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
 def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,LR_gene_read_min_len_dict):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
         _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
-    # SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
-    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,genes_regions_len_dict)
+    SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150,None)
+    # SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions(gene_regions_dict,genes_regions_len_dict)
     LR_gene_regions_dict,LR_genes_regions_len_dict = gene_regions_dict,genes_regions_len_dict
     # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_long_read_regions(gene_regions_dict,genes_regions_len_dict)
     for chr_name in gene_points_dict:
@@ -173,7 +172,7 @@ def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_
     return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict
 from intervaltree import IntervalTree
 def process_annotation_for_alignment(gene_exons_dict,gene_points_dict):
-    print('Process the reference annotation for read_count...')
+    print('Process the reference annotation for read_count...',flush=True)
     # process the reference annotation for read_count TODO: a universal format
     gene_regions_points_list,gene_range,gene_interval_tree_dict = dict(),dict(),dict()
     for chr_name in gene_points_dict:
