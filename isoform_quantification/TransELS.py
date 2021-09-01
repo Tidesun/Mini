@@ -14,7 +14,7 @@ from parse_annotation_main import parse_reference_annotation,process_annotation_
 from parse_alignment_main import parse_alignment
 from generate_output import generate_TransELS_output,generate_TrEESR_output
 from quantification import quantification
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,filtering,threads=1,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=0):
+def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,filtering,threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=0):
     start_time = time.time()
     print('Preprocessing...',flush=True)
     LR_gene_read_min_len_dict = None
@@ -27,7 +27,7 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
                 READ_LEN = read.infer_query_length()
                 if READ_LEN is not None:
                     break
-    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,'read_length')
+    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict,removed_gene_isoform_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,'read_length')
     gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
     end_time_1 = time.time()
     print('Done in %.3f s'%(end_time_1-start_time),flush=True)
@@ -81,4 +81,4 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # # rep_name = 1
     # pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_points_dict,SR_gene_regions_dict,LR_gene_regions_dict,gene_isoform_expression_dict,gene_isoform_tpm_expression_dict),open('/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/quantif_pkl/{}.p'.format(rep_name),'wb'))
     print('Done in %.3f s'%(end_time_5-end_time_4),flush=True)
-    generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
+    generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict)

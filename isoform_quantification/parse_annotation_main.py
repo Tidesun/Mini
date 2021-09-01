@@ -1,3 +1,4 @@
+from operator import ge
 from parse_annotation import parse_annotation
 from collections import defaultdict
 def check_region_type(region_name):
@@ -157,22 +158,26 @@ def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
                         
 
 
-def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection='num_exons'):
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection='read_length'):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
-        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
+        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
     if sr_region_selection == 'read_length':
-        SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_read_length(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,150,150)
+        SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_read_length(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,READ_LEN,READ_LEN)
     elif sr_region_selection == 'num_exons':
         SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_num_exons(gene_regions_dict,genes_regions_len_dict)
     LR_gene_regions_dict,LR_genes_regions_len_dict = gene_regions_dict,genes_regions_len_dict
     # LR_gene_regions_dict,LR_genes_regions_len_dict = filter_long_read_regions(gene_regions_dict,genes_regions_len_dict)
+    removed_gene_isoform_dict = defaultdict(lambda:defaultdict(lambda:{}))
     for chr_name in gene_points_dict:
         for gene_name in gene_points_dict[chr_name].copy():
             if (len(SR_gene_regions_dict[chr_name][gene_name]) == 0 or len(LR_gene_regions_dict[chr_name][gene_name]) == 0):
+                # removed_gene_isoform_dict[chr_name][gene_name]['isoforms_dict'] = gene_isoforms_dict[chr_name][gene_name]
+                removed_gene_isoform_dict[chr_name][gene_name]['isoforms_length_dict'] = gene_isoforms_length_dict[chr_name][gene_name]
+                removed_gene_isoform_dict[chr_name][gene_name]['raw_isoform_exons_dict'] = raw_isoform_exons_dict[chr_name][gene_name]
                 for dic in [gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict]:
                     if chr_name in dic and gene_name in dic[chr_name]:
                         del dic[chr_name][gene_name]
-    return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict
+    return gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict,removed_gene_isoform_dict
 from intervaltree import IntervalTree
 def process_annotation_for_alignment(gene_exons_dict,gene_points_dict):
     print('Process the reference annotation for read_count...',flush=True)

@@ -158,7 +158,7 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
     #         isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN))
     return isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict
 #######################
-def same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
+def is_same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
     if len(raw_isoform_exons_dict[isoform_A]['start_pos']) == len(raw_isoform_exons_dict[isoform_B]['start_pos']):
         for i in range(len(raw_isoform_exons_dict[isoform_A]['start_pos'])):
             if raw_isoform_exons_dict[isoform_A]['start_pos'][i] != raw_isoform_exons_dict[isoform_B]['start_pos'][i] or raw_isoform_exons_dict[isoform_B]['end_pos'][i] != raw_isoform_exons_dict[isoform_B]['end_pos'][i]:
@@ -224,13 +224,23 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'] = [start_pos for [start_pos,end_pos] in region_pos]
                 raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['end_pos'] = [end_pos for [start_pos,end_pos] in region_pos]
                 del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['region_pos']
+    same_structure_isoform_dict = {}
     for chr_name in raw_isoform_exons_dict:
         for gene_name in raw_isoform_exons_dict[chr_name]:
             isoform_names_to_drop = set()
             for isoform_A in raw_isoform_exons_dict[chr_name][gene_name]:
+                if isoform_A in isoform_names_to_drop:
+                    continue
                 for isoform_B in raw_isoform_exons_dict[chr_name][gene_name]:
-                    if (isoform_A != isoform_B) and (same_structure_isoform(raw_isoform_exons_dict[chr_name][gene_name],isoform_A,isoform_B)):
+                    if (isoform_A != isoform_B) and (is_same_structure_isoform(raw_isoform_exons_dict[chr_name][gene_name],isoform_A,isoform_B)):
+                        if chr_name not in same_structure_isoform_dict:
+                            same_structure_isoform_dict[chr_name] = {}
+                        if gene_name not in same_structure_isoform_dict[chr_name]:
+                            same_structure_isoform_dict[chr_name][gene_name] = {}
+                        if isoform_A not in same_structure_isoform_dict[chr_name][gene_name]:
+                            same_structure_isoform_dict[chr_name][gene_name][isoform_A] = set()
                         isoform_names_to_drop.add(isoform_B)
+                        same_structure_isoform_dict[chr_name][gene_name][isoform_A].add(isoform_B)
             for isoform_name in isoform_names_to_drop:
                 del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]
                 del gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
@@ -256,4 +266,4 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                         point_index += 1
     isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
     return [gene_exons_dict, gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
-            isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict]
+            isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict]

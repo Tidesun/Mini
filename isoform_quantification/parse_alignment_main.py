@@ -335,12 +335,12 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                 #             # if region not in gene_full_length_region_dict[rname][gname]:
                 #             del gene_regions_read_length[rname][gname][region]
                 #             del gene_regions_read_count[rname][gname][region]
-                if len(gene_regions_read_length[rname][gname]) == 0:
-                    del gene_regions_read_length[rname][gname]
-                    del gene_regions_read_count[rname][gname]
-            if len(gene_regions_read_length[rname]) == 0:
-                del gene_regions_read_length[rname]
-                del gene_regions_read_count[rname]
+            #     if len(gene_regions_read_length[rname][gname]) == 0:
+            #         del gene_regions_read_length[rname][gname]
+            #         del gene_regions_read_count[rname][gname]
+            # if len(gene_regions_read_length[rname]) == 0:
+            #     del gene_regions_read_length[rname]
+            #     del gene_regions_read_count[rname]
         return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length
     else:
         SR_read_len = 150
