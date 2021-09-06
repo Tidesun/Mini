@@ -6,9 +6,9 @@ from construct_feature_matrix import generate_all_feature_matrix_short_read,gene
 from parse_annotation_main import parse_reference_annotation,process_annotation_for_alignment
 from parse_alignment_main import parse_alignment
 import datetime
-def TrEESR(ref_file_path,output_path,long_read_alignment_file_path,sr_region_selection,filtering,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
+def TrEESR(ref_file_path,output_path,long_read_alignment_file_path,sr_region_selection,filtering,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=0):
     start_time = datetime.datetime.now()
-    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict = \
+    gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,_,_ = \
         parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection)
     end_time_1 = datetime.datetime.now()
     print('Done in %.3f s'%((end_time_1-start_time).total_seconds()),flush=True)
