@@ -322,10 +322,19 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
     best_mapped_region_length = 1
     best_regions = []
     best_genes = []
+    # is_problem = False
+    # if 'ENSG00000270800.3' in gene_candidates:
+    #     is_problem = True
+    #     print(read_name)
     for gname in gene_candidates:
         points_dict = gene_points_dict[rname][gname]
         gene_interval_tree = gene_interval_tree_dict[rname][gname]
         temp_region,temp_overlapped_length,temp_mapped_region_length= map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tree,gene_regions_dict[rname][gname],read_name)
+        # if is_problem:
+        #     print(gname)
+        #     print(temp_region)
+        #     print(temp_overlapped_length)
+        #     print(temp_mapped_region_length)
         if temp_region == '':
             continue
         if temp_overlapped_length > best_overlapped_length:

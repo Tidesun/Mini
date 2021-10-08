@@ -6,6 +6,7 @@ import time
 from itertools import repeat
 import dill as pickle
 import numpy as np
+from pathlib import Path
 from numpy import linalg as LA
 from qpsolvers import solve_qp
 from util import get_long_read_M_dist,get_filtered_out_long_read_M_dist,get_very_short_isoforms
@@ -14,7 +15,8 @@ from parse_annotation_main import parse_reference_annotation,process_annotation_
 from parse_alignment_main import parse_alignment
 from generate_output import generate_TransELS_output,generate_TrEESR_output
 from quantification import quantification
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,filtering,threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=0):
+def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,region_expression_calculation_method,alpha,beta,P,filtering,multi_mapping_filtering='best',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=0):
+    Path(output_path).mkdir(parents=True, exist_ok=True)
     start_time = time.time()
     print('Preprocessing...',flush=True)
     LR_gene_read_min_len_dict = None
@@ -31,14 +33,31 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     gene_regions_points_list,gene_range,gene_interval_tree_dict = process_annotation_for_alignment(gene_exons_dict,gene_points_dict)
     end_time_1 = time.time()
     print('Done in %.3f s'%(end_time_1-start_time),flush=True)
-    print('Mapping short read to regions...',flush=True)  
+    print('Mapping short read to regions...',flush=True)
+    if multi_mapping_filtering == 'unique_only':
+        pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
+        short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
+    elif multi_mapping_filtering == 'best':
+        pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
+        short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
     short_read_gene_regions_read_count,SR_read_len,num_SRs = parse_alignment(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,gene_isoforms_length_dict,False,False,threads)
     SR_read_len = READ_LEN
     end_time_2 = time.time()
     print('Mapped {} short reads'.format(num_SRs),flush=True)
     print('Done in %.3f s'%(end_time_2-end_time_1),flush=True)
     print('Mapping long read to regions...',flush=True)
+    if multi_mapping_filtering == 'unique_only':
+        pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
+        long_read_alignment_file_path = f'{output_path}/temp_lr.sam'
+    elif multi_mapping_filtering == 'best':
+        pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
+        long_read_alignment_file_path = f'{output_path}/temp_lr.sam'
     long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs,filtered_gene_regions_read_length = parse_alignment(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict, True,filtering,threads)
+    try:
+        Path(f'{output_path}/temp_sr.sam').unlink()
+        Path(f'{output_path}/temp_lr.sam').unlink()
+    except:
+        pass
     end_time_3 = time.time()
     print('Mapped {} long reads'.format(num_LRs,flush=True))
     print('Done in %.3f s'%(end_time_3-end_time_2),flush=True)
@@ -47,9 +66,11 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # filtered_unique_dist_df,filtered_multi_dist_df = get_filtered_out_long_read_M_dist(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict)
     
     short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,SR_gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,SR_genes_regions_len_dict,num_SRs,region_expression_calculation_method)
-    # with open('{}/dict.pkl'.format(output_path),'wb') as f:
+    # with open('dict.pkl','wb') as f:
     #     pickle.dump([SR_gene_regions_dict,short_read_gene_regions_read_count,short_read_gene_matrix_dict],f)
     long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method)
+    # with open('lr_matrix_dict.pkl','wb') as f:
+    #     pickle.dump(long_read_gene_matrix_dict,f)
     raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict = defaultdict(dict),defaultdict(dict),defaultdict(dict)
     raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict = {},{},{}
     for chr_name in raw_isoform_exons_dict:

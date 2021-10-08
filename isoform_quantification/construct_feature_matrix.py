@@ -172,6 +172,12 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
     return gene_matrix_dict
+def is_multi_isoform_region(matrix_dict,region):
+    index = matrix_dict['region_names_indics'][region]
+    A = matrix_dict['isoform_region_matrix'].copy()
+    A[A != 0] = 1
+    sum_A = A.sum(axis=1)
+    return sum_A[index] > 1
 def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_regions_read_length,gene_region_len_dict,num_LRs,total_long_read_length,region_expression_calculation_method,normalize_A=True):
     gene_matrix_dict = dict()
     for chr_name in gene_regions_read_count:
@@ -199,6 +205,14 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             for region in region_read_count_dict:
                 num_LRs_mapped_gene += region_read_count_dict[region]
             matrix_dict['num_LRs_mapped_gene'] = num_LRs_mapped_gene
+            matrix_dict['multi_isoforms_count'],matrix_dict['unique_isoforms_count'] = 0, 0
+            for region in matrix_dict['region_names_indics']:
+                index = matrix_dict['region_names_indics'][region]
+                count = matrix_dict['region_abund_matrix'][index]
+                if is_multi_isoform_region(matrix_dict,region):
+                    matrix_dict['multi_isoforms_count'] += count
+                else:
+                    matrix_dict['unique_isoforms_count'] += count
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
     return gene_matrix_dict
