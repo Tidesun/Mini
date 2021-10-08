@@ -61,10 +61,14 @@ optional arguments:
   --beta BETA           Beta[default:adaptive]: L2 regularization parameter
   --filtering FILTERING
                         Whether the very short long reads will be filtered[default:True][True,False]
+  --multi_mapping_filtering MULTI_MAPPING_FILTERING
+                        How to filter multi-mapping
+                        reads[default:best][unique_only,best]
   -t THREADS, --threads THREADS
                         Number of threads
 ```
 The alpha and beta parameters can be set as float. <br>
 The `alpha` should be set between 0 and 1, where 0 indicates using only the short reads and 1 indicates using only the long reads for quantification. <br>
 The `beta` can be set as a small float between 1e-9 to 1e-2. <br>
-By leaving `alpha` and `beta` default(adaptive), the alpha and beta will be obtained by deep learning model to get the optimal performance.
+By leaving `alpha` and `beta` default(adaptive), the alpha and beta will be obtained by deep learning model to get the optimal performance. <br>
+The `multi_mapping_filtering` can be set to `unique_only`, which will use only uniquely-mapping reads; or `best`, which will use the best MAPQ alignment from the multi-mapping reads; or do not set, which will not perform any filtering on multi_mapping reads. Default is `best`
