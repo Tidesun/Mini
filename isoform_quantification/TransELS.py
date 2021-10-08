@@ -34,12 +34,13 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     end_time_1 = time.time()
     print('Done in %.3f s'%(end_time_1-start_time),flush=True)
     print('Mapping short read to regions...',flush=True)
-    if multi_mapping_filtering == 'unique_only':
-        pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
-        short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
-    elif multi_mapping_filtering == 'best':
-        pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
-        short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
+    if short_read_alignment_file_path is not None:
+        if multi_mapping_filtering == 'unique_only':
+            pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
+            short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
+        elif multi_mapping_filtering == 'best':
+            pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_sr.sam',short_read_alignment_file_path,catch_stdout=False)
+            short_read_alignment_file_path = f'{output_path}/temp_sr.sam'
     short_read_gene_regions_read_count,SR_read_len,num_SRs = parse_alignment(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,gene_isoforms_length_dict,False,False,threads)
     SR_read_len = READ_LEN
     end_time_2 = time.time()
