@@ -105,6 +105,7 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
         model = load_model('model_10.pt')
     else:
         model = None
+    print(f'Using alpha = {alpha}',flush=True)
     list_of_all_genes_chrs = []
     for chr_name in long_read_gene_matrix_dict:
         if chr_name in short_read_gene_matrix_dict:

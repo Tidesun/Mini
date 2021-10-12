@@ -41,6 +41,8 @@ def parse_arguments():
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
     elif args.subparser_name == 'TransELS':
         print('Using TransELS',flush=True)
+        if (args.short_read_sam_path is None):
+            args.alpha = 1.0
         if (args.alpha == 'adaptive'):
             alpha = 'adaptive'
         else:
@@ -55,8 +57,6 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
-        if (args.short_read_sam_path is None):
-            args.alpha = 1.0
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,'original',alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.threads)
