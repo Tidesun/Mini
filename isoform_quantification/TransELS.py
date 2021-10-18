@@ -1,19 +1,14 @@
 from collections import defaultdict
-import concurrent.futures
-import datetime
 import pysam
 import time
-from itertools import repeat
 import dill as pickle
 import numpy as np
 from pathlib import Path
-from numpy import linalg as LA
-from qpsolvers import solve_qp
 from util import get_long_read_M_dist,get_filtered_out_long_read_M_dist,get_very_short_isoforms
 from construct_feature_matrix import generate_all_feature_matrix_short_read,generate_all_feature_matrix_long_read
 from parse_annotation_main import parse_reference_annotation,process_annotation_for_alignment
 from parse_alignment_main import parse_alignment
-from generate_output import generate_TransELS_output,generate_TrEESR_output
+from generate_output import generate_TransELS_output
 from quantification import quantification
 def infer_read_len(short_read_alignment_file_path):
     with pysam.AlignmentFile(short_read_alignment_file_path, "r") as samfile:

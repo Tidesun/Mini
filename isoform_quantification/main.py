@@ -1,6 +1,7 @@
 import argparse
 from TrEESR import TrEESR
 from TransELS import TransELS
+from generate_Ab import generate_Ab
 # import os
 # os.system("taskset -p 0xfffff %d" % os.getpid())
 # affinity_mask = os.sched_getaffinity(0)
@@ -13,6 +14,7 @@ def parse_arguments():
     subparsers = parser.add_subparsers(help='sub-command help',dest="subparser_name")
     parser_TrEESR = subparsers.add_parser('TrEESR', help='TrEESR')
     parser_TransELS = subparsers.add_parser('TransELS', help='TransELS')
+    parser_Ab = subparsers.add_parser('Ab', help='Ab')
     
     requiredNamed_TrEESR = parser_TrEESR.add_argument_group('required named arguments for TrEESR')
     requiredNamed_TrEESR.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -23,7 +25,7 @@ def parse_arguments():
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
     optional_TrEESR.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")
 
-    requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for TrEESR')
+    requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for TransELS')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
     requiredNamed_TransELS.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
     requiredNamed_TransELS.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
@@ -35,6 +37,18 @@ def parse_arguments():
     optional_TransELS.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
+
+
+    requiredNamed_Ab = parser_Ab.add_argument_group('required named arguments for generate Ab')
+    requiredNamed_Ab.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
+    requiredNamed_Ab.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
+    requiredNamed_Ab.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
+    
+    optional_Ab = parser_Ab.add_argument_group('optional arguments')
+    optional_Ab.add_argument('-srsam','--short_read_sam_path', type=str, help="The path of short read sam file",default=None)
+    optional_Ab.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
+    optional_Ab.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
+    optional_Ab.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
     if args.subparser_name == 'TrEESR':
         print('Using TrEESR')
@@ -60,6 +74,10 @@ def parse_arguments():
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,'original',alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.threads)
+    elif args.subparser_name == 'Ab':
+        if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
+            args.multi_mapping_filtering = 'no_filtering'
+        generate_Ab(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,'original',0.5,1e-6,1e-6,args.filtering,args.multi_mapping_filtering,args.threads)
     else:
         parser.print_help()
 if __name__ == "__main__":
