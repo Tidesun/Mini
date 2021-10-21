@@ -323,7 +323,8 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
     best_regions = []
     best_genes = []
     # is_problem = False
-        
+    # if 'ENST00000637539' in read_name:
+    #     is_problem = True
     for gname in gene_candidates:
         points_dict = gene_points_dict[rname][gname]
         gene_interval_tree = gene_interval_tree_dict[rname][gname]
