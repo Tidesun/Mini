@@ -11,10 +11,10 @@ def parse_arguments():
     """
     parser = argparse.ArgumentParser(description="Isoform quantification tools",add_help=True)
     subparsers = parser.add_subparsers(help='sub-command help',dest="subparser_name")
-    parser_TrEESR = subparsers.add_parser('TrEESR', help='TrEESR')
-    parser_TransELS = subparsers.add_parser('TransELS', help='TransELS')
+    parser_TrEESR = subparsers.add_parser('cal_K_value', aliases=['TrEESR'],help='Calculate K values')
+    parser_TransELS = subparsers.add_parser('quantify', aliases=['TransELS'],help='Isoform quantification')
     
-    requiredNamed_TrEESR = parser_TrEESR.add_argument_group('required named arguments for TrEESR')
+    requiredNamed_TrEESR = parser_TrEESR.add_argument_group('required named arguments for calculation of K value')
     requiredNamed_TrEESR.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
     requiredNamed_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
     requiredNamed_TrEESR.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
@@ -23,7 +23,7 @@ def parse_arguments():
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
     optional_TrEESR.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")
 
-    requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for TransELS')
+    requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
     requiredNamed_TransELS.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
     requiredNamed_TransELS.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
@@ -43,11 +43,11 @@ def parse_arguments():
     optional_TransELS.add_argument('--training',type=bool,default=False, help="Generate training dict")
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
-    if args.subparser_name == 'TrEESR':
-        print('Using TrEESR')
+    if args.subparser_name == 'cal_K_value':
+        print('Calculate K values')
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
-    elif args.subparser_name == 'TransELS':
-        print('Using TransELS',flush=True)
+    elif args.subparser_name == 'quantify':
+        print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None):
             args.alpha = 1.0
         if (args.alpha == 'adaptive'):

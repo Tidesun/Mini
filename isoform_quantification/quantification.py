@@ -142,7 +142,7 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
     print('Calculating the isoform expression...',flush=True)
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     if (alpha == 'adaptive' or beta == 'adaptive'):
-        model = load_model('model_10.pt')
+        model = load_model('model_90.pt')
     else:
         model = None
     print(f'Using alpha = {alpha}',flush=True)
