@@ -9,7 +9,7 @@
 ## Installation
 ```
 git clone https://github.com/Augroup/Mili.git
-cd isoform_quantification
+cd Mili
 python -m venv base
 source base/bin/activate
 pip install --upgrade pip
