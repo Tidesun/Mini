@@ -138,11 +138,11 @@ def estimate_isoform_expression_single_gene(args,SR_quantification_option):
     for isoform_name in isoform_names_indics:
         isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
     return estimate_isoform_expression(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,SR_region_eff_length_matrix,SR_gene_counts,alpha,beta,P,model,SR_quantification_option)
-def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,alpha,beta,P,):
+def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,DL_model,alpha,beta,P,):
     print('Calculating the isoform expression...',flush=True)
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     if (alpha == 'adaptive' or beta == 'adaptive'):
-        model = load_model('model_90.pt')
+        model = load_model(DL_model)
     else:
         model = None
     print(f'Using alpha = {alpha}',flush=True)

@@ -18,7 +18,7 @@ class AbLSTM(nn.Module):
         super(AbLSTM, self).__init__()
         self.hidden_dim = hidden_dim
         self.model = nn.Sequential(
-        nn.LSTM(embedding_dim, hidden_dim,bidirectional=True,num_layers=3),
+        nn.LSTM(embedding_dim, hidden_dim,bidirectional=True,num_layers=2),
         GetLastLayerOut(),
         nn.PReLU(),
         nn.BatchNorm1d(hidden_dim),
@@ -71,9 +71,9 @@ class AbLSTM(nn.Module):
         outputs = []
         for i,(sr_tpm,lr_tpm),alpha in zip(range(len(matrics)),matrics,list_of_alpha):
 #             if alpha > 1-0.01:
-#                 output = alpha * lr_tpm
+#                 output = lr_tpm
 #             elif alpha < 0.01:
-#                 output = (1 - alpha) * sr_tpm
+#                 output = sr_tpm
 #             else:
             output = (1 - alpha) * sr_tpm + alpha * lr_tpm
             assert torch.isnan(output).any() == False
@@ -156,7 +156,7 @@ def predict_params(sr_A,sr_b,lr_A,lr_b,model):
         beta = 1e-6
     return alpha,beta
 def load_model(model_path):
-    rnn = AbLSTM(2,256, 1).cpu()
+    rnn = AbLSTM(2,128, 1).to(device)
     dir_path = os.path.dirname(os.path.realpath(__file__))
     checkpoint = torch.load("{}/models/{}".format(dir_path,model_path),map_location='cpu')
     rnn.load_state_dict(checkpoint['model_state_dict'])

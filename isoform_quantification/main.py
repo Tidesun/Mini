@@ -35,18 +35,19 @@ def parse_arguments():
     optional_TransELS.add_argument('-sr_m2','--short_read_mate2_fastq', type=str, help="The path of short read mate 2 fastq file",default=None)
 
     optional_TransELS.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
-    optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[default:Mili]",default='Mili')
+    optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[default:Kallisto]",default='Kallisto')
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_TransELS.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
     optional_TransELS.add_argument('--training',type=bool,default=False, help="Generate training dict")
+    optional_TransELS.add_argument('--DL_model',type=str,default='polyester_model_5.pt',help='DL model to use')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
-    if args.subparser_name == 'cal_K_value':
+    if args.subparser_name == ['cal_K_value','TrEESR']:
         print('Calculate K values')
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
-    elif args.subparser_name == 'quantify':
+    elif args.subparser_name in ['quantify','TransELS']:
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None):
             args.alpha = 1.0
@@ -71,7 +72,7 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_fastq]
         elif args.short_read_mate1_fastq is not None:
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
-        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.threads)
+        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.threads)
     else:
         parser.print_help()
 if __name__ == "__main__":
