@@ -52,7 +52,7 @@ optional arguments:
   -ref_genome REFERENCE_GENOME, --reference_genome REFERENCE_GENOME
                         The path of reference genome file [Required for quantification by other tools]
   --SR_quantification_option SR_QUANTIFICATION_OPTION
-                        SR quantification option[Options: Kallisto, Kallisto] [default:Kallisto]
+                        SR quantification option[Options: Mili, Kallisto] [default:Kallisto]
   --alpha ALPHA         Alpha[default:adaptive]: SR and LR balance parameter
   --beta BETA           Beta[default:1e-6]: L2 regularization parameter
   --filtering FILTERING
