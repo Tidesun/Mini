@@ -15,6 +15,7 @@ source base/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+To use other tools for short reads quantification, due to file size limitation by Github, you need to download the binary file of other tools from `https://www.dropbox.com/s/pb1th3hihbn4qv3/external_bin.zip?dl=0` and unzip it to isoform_quantification/external_bin.
 ## Isoform quantification by Mili
 ```
 usage: main.py quantify [-h] -gtf GTF_ANNOTATION_PATH -lrsam
