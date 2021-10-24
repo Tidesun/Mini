@@ -35,7 +35,7 @@ def parse_arguments():
     optional_TransELS.add_argument('-sr_m2','--short_read_mate2_fastq', type=str, help="The path of short read mate 2 fastq file",default=None)
 
     optional_TransELS.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
-    optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[default:Kallisto]",default='Kallisto')
+    optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Mili]",default='Mili')
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_TransELS.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -65,6 +65,7 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
+        # if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         SR_fastq_list = []

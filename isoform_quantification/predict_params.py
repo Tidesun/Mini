@@ -138,23 +138,21 @@ def get_batch_data(all_sr_A_list,all_lr_A_list,all_sr_b_list,all_lr_b_list,all_s
         normalized_packed = pack_padded_sequence(normalized,lens_unpacked,batch_first=True,enforce_sorted=False)
         all_packed.append(normalized_packed)
     return all_packed,all_matrics
-def predict_params(sr_A,sr_b,lr_A,lr_b,model):
+def predict_params(sr_A,sr_b,lr_A,lr_b,sr_TPM,lr_TPM,model):
     sr_A_tensor = torch.FloatTensor(sr_A)
     lr_A_tensor = torch.FloatTensor(lr_A)
     sr_b_tensor = torch.FloatTensor(sr_b)
     lr_b_tensor = torch.FloatTensor(lr_b)
-    dump_sr_tpm = torch.ones(sr_A_tensor.shape[1])
-    dump_lr_tpm = torch.ones(lr_A_tensor.shape[1])
-    packed,matrics = get_batch_data([[sr_A_tensor]],[[lr_A_tensor]],[[sr_b_tensor]],[[lr_b_tensor]],[[dump_sr_tpm]],[[dump_lr_tpm]])
+    sr_TPM_tensor = torch.FloatTensor(sr_TPM)
+    lr_TPM_tensor = torch.FloatTensor(lr_TPM)
+    packed,matrics = get_batch_data([[sr_A_tensor]],[[lr_A_tensor]],[[sr_b_tensor]],[[lr_b_tensor]],[[sr_TPM_tensor]],[[lr_TPM_tensor]])
     try:
         _,params = model.forward(packed,matrics)
         alpha = params.item()
-        beta = 1e-6
     except Exception as e:
         print(e)
         alpha = 0.5
-        beta = 1e-6
-    return alpha,beta
+    return alpha
 def load_model(model_path):
     rnn = AbLSTM(2,128, 1).to(device)
     dir_path = os.path.dirname(os.path.realpath(__file__))
