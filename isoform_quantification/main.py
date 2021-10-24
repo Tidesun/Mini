@@ -74,7 +74,6 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_fastq]
         elif args.short_read_mate1_fastq is not None:
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
-        print(args)
         TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads)
     else:
         parser.print_help()
