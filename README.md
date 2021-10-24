@@ -45,15 +45,16 @@ optional arguments:
   -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
                         The path of short read sam file
   -srfastq SHORT_READ_FASTQ, --short_read_fastq SHORT_READ_FASTQ
-                        The path of short read fastq file [Required for quantification by other tools.Or use paired end reads]
+                        The path of short read fastq file
   -sr_m1 SHORT_READ_MATE1_FASTQ, --short_read_mate1_fastq SHORT_READ_MATE1_FASTQ
-                        The path of short read mate 1 fastq file [Required for quantification by other tools.Or use single end reads]
+                        The path of short read mate 1 fastq file
   -sr_m2 SHORT_READ_MATE2_FASTQ, --short_read_mate2_fastq SHORT_READ_MATE2_FASTQ
-                        The path of short read mate 2 fastq file [Required for quantification by other tools.Or use single end reads]
+                        The path of short read mate 2 fastq file
   -ref_genome REFERENCE_GENOME, --reference_genome REFERENCE_GENOME
-                        The path of reference genome file [Required for quantification by other tools]
+                        The path of reference genome file
   --SR_quantification_option SR_QUANTIFICATION_OPTION
-                        SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Mili]
+                        SR quantification option[Options: Mili,
+                        Kallisto,Salmon, RSEM] [default:Mili]
   --alpha ALPHA         Alpha[default:adaptive]: SR and LR balance parameter
   --beta BETA           Beta[default:1e-6]: L2 regularization parameter
   --filtering FILTERING
@@ -63,8 +64,14 @@ optional arguments:
                         How to filter multi-mapping
                         reads[default:best][unique_only,best]
   --training TRAINING   Generate training dict
+  --DL_model DL_MODEL   DL model to use
+  --assign_unique_mapping_option ASSIGN_UNIQUE_MAPPING_OPTION
+                        How to assign unique mapping reads
+                        [Options:linear_model,manual_assign]
+                        [default:linear_model]
   -t THREADS, --threads THREADS
                         Number of threads
+
 ```
 The alpha and beta parameters can be set as float. <br>
 The `alpha` should be set between 0 and 1, where 0 indicates using only the short reads and 1 indicates using only the long reads for quantification. <br>
@@ -72,6 +79,7 @@ The `beta` can be set as a small float between 1e-9 to 1e-2. <br>
 By leaving `alpha` and `beta` default(adaptive), the alpha and beta will be obtained by deep learning model to get the optimal performance. <br>
 The `multi_mapping_filtering` can be set to `unique_only`, which will use only uniquely-mapping reads; or `best`, which will use the best MAPQ alignment from the multi-mapping reads; or do not set, which will not perform any filtering on multi_mapping reads. Default is `best`<br>
 Set `SR_quantification_option` to use other tools for short reads quantification. For other tools, you need also provide `reference_genome` and `srfastq` for single end reads / `sr_m1` and `sr_m2` for paired end reads.
+Set `assign_unique_mapping_option` to decide how to assign reads that are uniquely mapped to isoform. Set `linear_model` to use linear model to assign. Set `manual_assign` to assign manually.
 
 ## Calculate K-value
 ```
