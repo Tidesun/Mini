@@ -138,13 +138,13 @@ def get_batch_data(all_sr_A_list,all_lr_A_list,all_sr_b_list,all_lr_b_list,all_s
         normalized_packed = pack_padded_sequence(normalized,lens_unpacked,batch_first=True,enforce_sorted=False)
         all_packed.append(normalized_packed)
     return all_packed,all_matrics
-def predict_params(sr_A,sr_b,lr_A,lr_b,sr_TPM,lr_TPM,model):
+def predict_params(sr_A,sr_b,lr_A,lr_b,model):
     sr_A_tensor = torch.FloatTensor(sr_A)
     lr_A_tensor = torch.FloatTensor(lr_A)
     sr_b_tensor = torch.FloatTensor(sr_b)
     lr_b_tensor = torch.FloatTensor(lr_b)
-    sr_TPM_tensor = torch.FloatTensor(sr_TPM)
-    lr_TPM_tensor = torch.FloatTensor(lr_TPM)
+    sr_TPM_tensor = torch.ones(sr_A.shape[1])
+    lr_TPM_tensor = torch.ones(lr_A.shape[1])
     packed,matrics = get_batch_data([[sr_A_tensor]],[[lr_A_tensor]],[[sr_b_tensor]],[[lr_b_tensor]],[[sr_TPM_tensor]],[[lr_TPM_tensor]])
     try:
         _,params = model.forward(packed,matrics)
