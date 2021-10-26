@@ -28,7 +28,7 @@ def normalize_expression(gene_isoform_expression_dict):
     return gene_isoform_tpm_expression_dict 
                 
 
-def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,params):
+def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,SR_quantification_option,params):
     if SR_region_read_count_matrix.sum() != 0:
         SR_b = SR_region_read_count_matrix / SR_region_read_count_matrix.sum()
     else:
@@ -38,6 +38,8 @@ def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,S
     else:
         LR_b = LR_region_read_count_matrix.copy()
     alpha,beta = params['alpha'], params['beta']
+    if SR_quantification_option != 'Mili':
+        alpha = 1.0
     num_isoforms = SR_isoform_region_matrix.shape[1]
     #l2 norm
     Q = 2 * (1.0 - alpha) * np.matmul(SR_isoform_region_matrix.T,SR_isoform_region_matrix) + 2 * alpha * np.matmul(LR_isoform_region_matrix.T,LR_isoform_region_matrix) + 2 * beta * np.identity(num_isoforms)
@@ -127,7 +129,7 @@ def estimate_isoform_expression_single_gene(args):
         gene_alpha = alpha
     # for params in params_grid:
     params = {'alpha':gene_alpha,'beta':selected_beta}
-    isoform_expression = estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,params)
+    isoform_expression = estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,SR_quantification_option,params)
     if isoform_expression.sum() != 0:
         isoform_expression = isoform_expression/isoform_expression.sum()
     if assign_unique_mapping_option == 'linear_model':
