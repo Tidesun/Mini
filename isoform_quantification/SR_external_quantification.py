@@ -70,12 +70,20 @@ def quantify_by_rsem(ref_annotation,ref_genome,temp_dir,external_bin_path,SR_fas
     # ref_transcriptome = f'{temp_dir}/ref_transcriptome.fa'
     # gtf_file.write_fa(ref_transcriptome)
     subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-prepare-reference', "--gtf",ref_annotation,'-p',str(threads),'--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',ref_genome,'rsem_index'],cwd=temp_dir)
-    if len(SR_fastq_list) == 1:
-        subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
-            SR_fastq_list[0],'rsem_index','rsem'],cwd=temp_dir)
+    if 'fasta' in SR_fastq_list[0] or 'fa' in SR_fastq_list[0]:
+        if len(SR_fastq_list) == 1:
+            subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--no-qualities','--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
+                SR_fastq_list[0],'rsem_index','rsem'],cwd=temp_dir)
+        else:
+            subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--no-qualities','--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
+                '--paired-end',SR_fastq_list[0],SR_fastq_list[1],'rsem_index','rsem'],cwd=temp_dir)
     else:
-        subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
-            '--paired-end',SR_fastq_list[0],SR_fastq_list[1],'rsem_index','rsem'],cwd=temp_dir)
+        if len(SR_fastq_list) == 1:
+            subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
+                SR_fastq_list[0],'rsem_index','rsem'],cwd=temp_dir)
+        else:
+            subprocess.run([f'{external_bin_path}/RSEM-1.3.3/bin/rsem-calculate-expression','-p',str(threads),'--hisat2-hca','--hisat2-path',f'{external_bin_path}/hisat2/',\
+                '--paired-end',SR_fastq_list[0],SR_fastq_list[1],'rsem_index','rsem'],cwd=temp_dir)
     expr_dict = {}
     with open(f'{temp_dir}/rsem.isoforms.results') as f:
         f.readline()
