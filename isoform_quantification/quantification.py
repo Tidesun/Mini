@@ -3,6 +3,7 @@ import numpy as np
 from numpy import linalg as LA
 from qpsolvers import solve_qp
 from predict_params import load_model,predict_params
+import dill as pickle
 def normalize_expression(gene_isoform_expression_dict):
     gene_isoform_tpm_expression_dict = defaultdict(lambda: defaultdict(dict))
     SR_isoform_expression_sum = 0
@@ -23,6 +24,7 @@ def normalize_expression(gene_isoform_expression_dict):
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm'] = gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'] * 1e6 / SR_isoform_expression_sum
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm'] = gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'] * 1e6 / LR_isoform_expression_sum
             gene_alpha = gene_isoform_expression_dict[chr_name][gene_name]['alpha']
+            gene_isoform_tpm_expression_dict[chr_name][gene_name]['alpha'] = gene_alpha
             gene_isoform_tpm_expression_dict[chr_name][gene_name]['tpm'] = (1 - gene_alpha) * gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm'] + gene_alpha * gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm']
 
     return gene_isoform_tpm_expression_dict 
@@ -100,7 +102,7 @@ def assign_reads(isoform_expression,A,b):
     corrected_isoform_expression = unique_isoform_expression + multiple_isoform_expression
     return corrected_isoform_expression
 def estimate_isoform_expression_single_gene(args):
-    short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option = args
+    short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option,gene = args
     SR_isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix']
     SR_region_read_count_matrix = short_read_gene_matrix_dict['region_abund_matrix']
     SR_gene_counts = short_read_gene_matrix_dict['num_SRs_mapped_gene']
@@ -124,6 +126,9 @@ def estimate_isoform_expression_single_gene(args):
     else:
         selected_beta = beta
     if (alpha == 'adaptive'):
+        # if gene == 'ENSG00000280987.4':
+        #     with open('temp.pkl','wb') as f:
+        #         pickle.dump([SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix],f)
         gene_alpha = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,model)
     else:
         gene_alpha = alpha
@@ -158,7 +163,7 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
             for gene_name in long_read_gene_matrix_dict[chr_name]:
                 if gene_name in short_read_gene_matrix_dict[chr_name]:
                     list_of_all_genes_chrs.append((gene_name,chr_name))
-    list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option) for gene_name,chr_name in list_of_all_genes_chrs]
+    list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option,gene_name) for gene_name,chr_name in list_of_all_genes_chrs]
     for (gene_name,chr_name), args in zip(list_of_all_genes_chrs, list_of_args):
         # try:
         result = estimate_isoform_expression_single_gene(args)
