@@ -41,7 +41,7 @@ def parse_arguments():
     optional_TransELS.add_argument('--filtering',type=bool,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
     optional_TransELS.add_argument('--training',type=bool,default=False, help="Generate training dict")
-    optional_TransELS.add_argument('--DL_model',type=str,default='Kallisto.pt',help='DL model to use')
+    optional_TransELS.add_argument('--DL_model',type=str,default=None,help='DL model to use')
     optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:linear_model]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
@@ -66,7 +66,8 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
-        # if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
+        if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
+            raise Exception('SR_quantification_option is not valid.Options: [Mili, Kallisto,Salmon, RSEM]')
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         SR_fastq_list = []
@@ -74,6 +75,8 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_fastq]
         elif args.short_read_mate1_fastq is not None:
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
+        if args.DL_model is None:
+            args.DL_model = args.SR_quantification_option + '.pt'
         TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads)
     else:
         parser.print_help()
