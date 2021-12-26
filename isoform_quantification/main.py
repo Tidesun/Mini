@@ -16,9 +16,9 @@ def parse_arguments():
     
     requiredNamed_TrEESR = parser_TrEESR.add_argument_group('required named arguments for calculation of K value')
     requiredNamed_TrEESR.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
-    requiredNamed_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
     requiredNamed_TrEESR.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
     optional_TrEESR = parser_TrEESR.add_argument_group('optional arguments')
+    optional_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False)
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
     optional_TrEESR.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")

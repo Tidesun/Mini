@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import dill as pickle
 import io
-def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list):
+def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict] = info_dict_list
     out_dict = short_read_gene_matrix_dict.copy()
@@ -30,6 +30,7 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
             for gene_name in long_read_gene_matrix_dict[chr_name]:
                 if gene_name in short_read_gene_matrix_dict[chr_name]:
                     list_of_all_genes_chrs.append((gene_name,chr_name))
+    
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tSR_A_dim\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\tLR_A_dim\n')
         for (gene_name,chr_name) in list_of_all_genes_chrs:
@@ -41,6 +42,15 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
             SR_A_dim = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
             LR_A_dim = long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
             f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,num_exons,num_split_exons,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_A_dim,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_A_dim))
+        for chr_name in removed_gene_isoform_dict:
+            for gene_name in removed_gene_isoform_dict[chr_name]:
+                info_dict = removed_gene_isoform_dict[chr_name][gene_name]['info']
+                num_isoforms,num_exons,num_split_exons = info_dict['num_isoforms'],info_dict['num_exons'],info_dict['num_split_exons']
+                SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = 'NA','NA','NA','NA'
+                LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = 'NA','NA','NA','NA'
+                SR_A_dim = 'NA'
+                LR_A_dim = 'NA'
+                f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,num_exons,num_split_exons,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_A_dim,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_A_dim))
     with open(output_path+"/kvalues_isoform.out",'w') as f:
         f.write('Isoform\tGene\tChr\tNum_exons\tIsoform_length\tNum_isoforms\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
         for (gene_name,chr_name) in list_of_all_genes_chrs:
@@ -51,6 +61,14 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
                 SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                 LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                 f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
+        for chr_name in removed_gene_isoform_dict:
+            for gene_name in removed_gene_isoform_dict[chr_name]:
+                isoform_info_dict = removed_gene_isoform_dict[chr_name][gene_name]['isoform_info']
+                for isoform_name in isoform_info_dict:
+                    num_exons,isoform_length,num_isoforms = isoform_info_dict[isoform_name]['num_exons'],isoform_info_dict[isoform_name]['isoform_length'],removed_gene_isoform_dict[chr_name][gene_name]['info']['num_isoforms']
+                    SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = 'NA','NA','NA','NA'
+                    LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = 'NA','NA','NA','NA'
+                    f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
 def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     # with open(output_path+'lr.pkl','wb') as f:

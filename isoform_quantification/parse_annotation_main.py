@@ -174,6 +174,11 @@ def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_
                 # removed_gene_isoform_dict[chr_name][gene_name]['isoforms_dict'] = gene_isoforms_dict[chr_name][gene_name]
                 removed_gene_isoform_dict[chr_name][gene_name]['isoforms_length_dict'] = gene_isoforms_length_dict[chr_name][gene_name]
                 removed_gene_isoform_dict[chr_name][gene_name]['raw_isoform_exons_dict'] = raw_isoform_exons_dict[chr_name][gene_name]
+                removed_gene_isoform_dict[chr_name][gene_name]['info'] = {'num_split_exons':len(gene_exons_dict[chr_name][gene_name]),'num_exons':len(raw_gene_exons_dict[chr_name][gene_name]),'num_isoforms':len(gene_isoforms_dict[chr_name][gene_name])}
+                isoform_info_dict = {}
+                for isoform_name in raw_isoform_exons_dict[chr_name][gene_name]:
+                    isoform_info_dict[isoform_name] = {'num_exons':len(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos']),'num_split_exons':len(raw_isoform_exons_dict[chr_name][gene_name]),'isoform_length':gene_isoforms_length_dict[chr_name][gene_name][isoform_name]}
+                removed_gene_isoform_dict[chr_name][gene_name]['isoform_info'] = isoform_info_dict
                 for dic in [gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict]:
                     if chr_name in dic and gene_name in dic[chr_name]:
                         del dic[chr_name][gene_name]
