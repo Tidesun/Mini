@@ -54,7 +54,7 @@ optional arguments:
                         The path of reference genome file
   --SR_quantification_option SR_QUANTIFICATION_OPTION
                         SR quantification option[Options: Mili,
-                        Kallisto,Salmon, RSEM] [default:Mili]
+                        Kallisto,Salmon, RSEM] [default:Kallisto]
   --alpha ALPHA         Alpha[default:adaptive]: SR and LR balance parameter
   --beta BETA           Beta[default:1e-6]: L2 regularization parameter
   --filtering FILTERING
