@@ -28,12 +28,14 @@ usage: main.py quantify [-h] -gtf GTF_ANNOTATION_PATH -lrsam
                         [--SR_quantification_option SR_QUANTIFICATION_OPTION]
                         [--alpha ALPHA] [--beta BETA] [--filtering FILTERING]
                         [--multi_mapping_filtering MULTI_MAPPING_FILTERING]
-                        [--training TRAINING] [-t THREADS]
+                        [--training TRAINING] [--DL_model DL_MODEL]
+                        [--assign_unique_mapping_option ASSIGN_UNIQUE_MAPPING_OPTION]
+                        [-t THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
 
-required named arguments for TransELS:
+required named arguments for isoform quantification:
   -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
                         The path of annotation file
   -lrsam LONG_READ_SAM_PATH, --long_read_sam_path LONG_READ_SAM_PATH
@@ -83,23 +85,23 @@ Set `assign_unique_mapping_option` to decide how to assign reads that are unique
 
 ## Calculate K-value
 ```
-usage: main.py cal_K_value [-h] -gtf GTF_ANNOTATION_PATH -lrsam LONG_READ_SAM_PATH
-                      -o OUTPUT_PATH [-t THREADS]
-                      [--sr_region_selection SR_REGION_SELECTION]
-                      [--filtering FILTERING]
+usage: main.py cal_K_value [-h] -gtf GTF_ANNOTATION_PATH -o OUTPUT_PATH
+                           [-lrsam LONG_READ_SAM_PATH] [-t THREADS]
+                           [--sr_region_selection SR_REGION_SELECTION]
+                           [--filtering FILTERING]
 
 optional arguments:
   -h, --help            show this help message and exit
 
-required named arguments for TrEESR:
+required named arguments for calculation of K value:
   -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
                         The path of annotation file
-  -lrsam LONG_READ_SAM_PATH, --long_read_sam_path LONG_READ_SAM_PATH
-                        The path of long read sam file
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
                         The path of output directory
 
 optional arguments:
+  -lrsam LONG_READ_SAM_PATH, --long_read_sam_path LONG_READ_SAM_PATH
+                        The path of long read sam file
   -t THREADS, --threads THREADS
                         Number of threads
   --sr_region_selection SR_REGION_SELECTION
@@ -109,3 +111,4 @@ optional arguments:
                         Whether the very short long reads will be
                         filtered[default:True][True,False]
 ```
+For gene that only consists of a very short exon, and that exon was filtered out by the strategy defined by `--sr_region_selection`, the k value will not be calculated and a `NA` value will be given.
