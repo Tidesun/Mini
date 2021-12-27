@@ -123,12 +123,11 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # info_dict_list = get_info_dict_list(gene_isoforms_dict,gene_exons_dict,raw_gene_exons_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
     print('Start quantification...',flush=True)
     start_time = time.time()
+    SR_gene_isoform_expression_dict = None
     if SR_quantification_option != 'Mili':
         if short_read_alignment_file_path is not None:
             ref_genome = reference_genome
             SR_gene_isoform_expression_dict = SR_external_quantification(short_read_gene_matrix_dict,gene_isoforms_length_dict,SR_quantification_option,SR_fastq_list,SR_read_len,ref_file_path,ref_genome,output_path,threads)
-    else:
-        SR_gene_isoform_expression_dict = None
     # import dill as pickle
     # pickle.dump((long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,short_read_gene_matrix_dict),open(f'{output_path}/dict.pkl','wb'))
     gene_isoform_tpm_expression_dict,list_of_all_genes_chrs = quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,DL_model,alpha,beta,P,assign_unique_mapping_option)
