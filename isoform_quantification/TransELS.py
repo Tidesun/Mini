@@ -2,7 +2,7 @@ from collections import defaultdict
 import pysam
 import time
 import dill as pickle
-import numpy as np
+import shutil
 from pathlib import Path
 from util import get_long_read_M_dist,get_filtered_out_long_read_M_dist,get_very_short_isoforms
 from construct_feature_matrix import generate_all_feature_matrix_short_read,generate_all_feature_matrix_long_read
@@ -141,4 +141,8 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     if training:
         generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path)
     generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict)
+    try:
+        shutil.rmtree(f'{output_path}/temp/')
+    except:
+        pass
     print('Done in %.3f s'%(end_time-start_time),flush=True)
