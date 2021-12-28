@@ -50,8 +50,17 @@ def parse_arguments():
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
     elif args.subparser_name in ['quantify','TransELS']:
         print('Isoform quantification',flush=True)
-        if (args.short_read_sam_path is None):
+        if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0
+            args.SR_quantification_option = 'Mili'
+        if args.alpha != 1.0:
+            if args.short_read_sam_path is None:
+                raise Exception('You need to provide a short read alignemnt file if the alpha is not 1!')
+            if args.SR_quantification_option != 'Mili':
+                if (args.short_read_fastq is None) and (args.short_read_mate1_fastq is None or args.short_read_mate2_fastq is None):
+                    raise Exception('You need to provide the single end or paried end SR fastq if using other short read quantification options!')
+                if (args.reference_genome is None):
+                    raise Exception('You need to provide the reference genome if using other short read quantification options!')
         if (args.alpha == 'adaptive'):
             alpha = 'adaptive'
         else:
