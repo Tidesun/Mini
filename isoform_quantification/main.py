@@ -61,7 +61,7 @@ def parse_arguments():
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0
-            args.SR_quantification_option = 'Mili'
+            args.SR_quantification_option = 'Kallisto'
         if args.alpha != 1.0:
             if args.short_read_sam_path is None:
                 raise Exception('You need to provide a short read alignemnt file if the alpha is not 1!')

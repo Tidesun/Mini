@@ -58,6 +58,9 @@ def map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,
     long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs,filtered_gene_regions_read_length = parse_alignment(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict, True,filtering,threads)
     try:
         Path(f'{output_path}/temp_sr.sam').unlink()
+    except:
+        pass
+    try:
         Path(f'{output_path}/temp_lr.sam').unlink()
     except:
         pass
