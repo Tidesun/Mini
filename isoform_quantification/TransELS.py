@@ -46,7 +46,7 @@ def map_short_reads(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LE
     short_read_gene_matrix_dict = generate_all_feature_matrix_short_read(gene_isoforms_dict,SR_gene_regions_dict,short_read_gene_regions_read_count,SR_read_len,SR_genes_regions_len_dict,num_SRs)
     print('Done in %.3f s'%(end_time-start_time),flush=True)
     return short_read_gene_matrix_dict,SR_read_len
-def map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads):
+def map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict):
     print('Mapping long read to regions...',flush=True)
     start_time = time.time()
     if multi_mapping_filtering == 'unique_only':
@@ -63,7 +63,7 @@ def map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,
         pass
     print('Mapped {} long reads'.format(num_LRs,flush=True))
     print('Constructing matrix and calculating condition number...',flush=True)
-    long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length)
+    long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,num_LRs,total_long_read_length,raw_isoform_exons_dict)
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
     return long_read_gene_matrix_dict
@@ -108,7 +108,7 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
                 same_structure_isoform_dict,removed_gene_isoform_dict,gene_range,gene_interval_tree_dict = \
                     parse(ref_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,short_read_alignment_file_path,threads)
     short_read_gene_matrix_dict,SR_read_len = map_short_reads(short_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,gene_isoforms_length_dict,output_path,multi_mapping_filtering,threads)
-    long_read_gene_matrix_dict = map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads)
+    long_read_gene_matrix_dict = map_long_reads(long_read_alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict)
     
 
     # get_very_short_isoforms(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict,isoform_length_dict)

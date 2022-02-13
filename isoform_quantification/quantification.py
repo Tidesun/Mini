@@ -114,9 +114,11 @@ def estimate_isoform_expression_single_gene(args):
     LR_isoform_region_matrix = long_read_gene_matrix_dict['isoform_region_matrix']
     LR_region_read_count_matrix = long_read_gene_matrix_dict['region_abund_matrix']
     isoform_lengths = np.zeros((len(gene_isoforms_length_dict)))
+    isoform_num_exons = np.zeros((len(gene_isoforms_length_dict)))
     isoform_names_indics = short_read_gene_matrix_dict['isoform_names_indics']
     for isoform_name in isoform_names_indics:
         isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
+        isoform_num_exons[isoform_names_indics[isoform_name]] = long_read_gene_matrix_dict['num_exons'][isoform_name]
     num_isoforms = SR_isoform_region_matrix.shape[1]
     if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
         return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),0.5
@@ -129,7 +131,7 @@ def estimate_isoform_expression_single_gene(args):
         # if gene == 'ENSG00000280987.4':
         #     with open('temp.pkl','wb') as f:
         #         pickle.dump([SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix],f)
-        gene_alpha = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,model)
+        gene_alpha = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,isoform_num_exons,model)
     else:
         gene_alpha = alpha
     # for params in params_grid:

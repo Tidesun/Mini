@@ -20,6 +20,7 @@ def get_genome_fa(genome_fa_file):
 			if line.startswith(">"):
 				dic_chr_seq[chrom] = "".join(seq_list)
 				seq_list = []
+				# chrom = line.strip()[1:]
 				chrom = re.search("^>(\w+)",line.strip()).group(1)
 			else:
 				seq_list.append(line.strip())

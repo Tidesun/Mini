@@ -6,7 +6,7 @@ import bisect
 import traceback
 from util import sync_reference_name
 # from memory_profiler import profile
-valid_cigar = set("0123456789MNID")
+# valid_cigar = set("0123456789MNID")
 read_len_margin = 0
 
 ### Adds missing starting points when exon length is 1
