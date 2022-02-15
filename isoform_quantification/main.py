@@ -45,19 +45,19 @@ def parse_arguments():
     optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:linear_model]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     args = parser.parse_args()
-    if args.filtering == 'True':
-        args.filtering = True
-    else:
-        args.filtering = False
-    if args.training == 'True':
-        args.training = True
-    else:
-        args.training = False
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
         TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
     elif args.subparser_name in ['quantify','TransELS']:
+        if args.filtering == 'True':
+            args.filtering = True
+        else:
+            args.filtering = False
+        if args.training == 'True':
+            args.training = True
+        else:
+            args.training = False
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0

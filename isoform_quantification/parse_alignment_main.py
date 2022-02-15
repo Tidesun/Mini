@@ -32,7 +32,8 @@ def parse_alignment_iteration(alignment_file_path,READ_LEN, READ_JUNC_MIN_MAP_LE
         max_buffer_size = 1e2
         buffer_size = 0
         for line in aln_file:
-            if line_num_ct >= num_lines:
+            line_num_ct += 1
+            if line_num_ct > num_lines:
                 break
             try:
                 if line[0] == '@':
@@ -65,7 +66,6 @@ def parse_alignment_iteration(alignment_file_path,READ_LEN, READ_JUNC_MIN_MAP_LE
                 temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length))
                 local_gene_regions_read_count,local_gene_regions_read_length = {},{}
                 buffer_size = 0
-            line_num_ct += 1
         if buffer_size > 0:
             temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length))
     return 

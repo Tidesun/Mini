@@ -176,7 +176,7 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
     # best_overlapped_length = 0
     for j in range(len(read_segments)):
         [seg_start,seg_end] = read_segments[j]
-        exons = [[exon.begin,exon.end - 1] for exon in gene_interval_tree.overlap(seg_start,seg_end)]
+        exons = [[exon.begin,exon.end - 1] for exon in gene_interval_tree.overlap(seg_start+1,seg_end)]
         possible_exon_regions = []
         if len(exons) > 0:
             exons = sorted(exons,key=lambda exon:exon[0],reverse=True)
