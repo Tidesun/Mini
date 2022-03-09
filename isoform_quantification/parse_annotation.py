@@ -248,21 +248,28 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
     same_structure_isoform_dict = {}
     for chr_name in raw_isoform_exons_dict:
         for gene_name in raw_isoform_exons_dict[chr_name]:
-            isoform_names_to_drop = set()
+            isoform_names_to_join = set()
             for isoform_A in raw_isoform_exons_dict[chr_name][gene_name]:
-                if isoform_A in isoform_names_to_drop:
+                if isoform_A in isoform_names_to_join:
                     continue
                 for isoform_B in raw_isoform_exons_dict[chr_name][gene_name]:
                     if (isoform_A != isoform_B) and (is_same_structure_isoform(raw_isoform_exons_dict[chr_name][gene_name],isoform_A,isoform_B)):
-                        if chr_name not in same_structure_isoform_dict:
-                            same_structure_isoform_dict[chr_name] = {}
-                        if gene_name not in same_structure_isoform_dict[chr_name]:
-                            same_structure_isoform_dict[chr_name][gene_name] = {}
-                        if isoform_A not in same_structure_isoform_dict[chr_name][gene_name]:
-                            same_structure_isoform_dict[chr_name][gene_name][isoform_A] = set()
-                        isoform_names_to_drop.add(isoform_B)
-                        same_structure_isoform_dict[chr_name][gene_name][isoform_A].add(isoform_B)
-            for isoform_name in isoform_names_to_drop:
+                        # if chr_name not in same_structure_isoform_dict:
+                        #     same_structure_isoform_dict[chr_name] = {}
+                        # if gene_name not in same_structure_isoform_dict[chr_name]:
+                        #     same_structure_isoform_dict[chr_name][gene_name] = {}
+                        # if isoform_A not in same_structure_isoform_dict[chr_name][gene_name]:
+                        #     same_structure_isoform_dict[chr_name][gene_name][isoform_A] = set()
+                        isoform_names_to_join.add(isoform_A)
+                        isoform_names_to_join.add(isoform_B)
+                        # same_structure_isoform_dict[chr_name][gene_name][isoform_A].add(isoform_B)
+            if len(isoform_names_to_join) > 0:
+                joined_isoform_name = '-'.join(list(isoform_names_to_join))
+                original_isoform_name = list(isoform_names_to_join)[0]
+                raw_isoform_exons_dict[chr_name][gene_name][joined_isoform_name] = copy.deepcopy(raw_isoform_exons_dict[chr_name][gene_name][original_isoform_name])
+                gene_isoforms_length_dict[chr_name][gene_name][joined_isoform_name]= copy.deepcopy(gene_isoforms_length_dict[chr_name][gene_name][original_isoform_name])
+                gene_isoforms_dict[chr_name][gene_name].append(joined_isoform_name)
+            for isoform_name in isoform_names_to_join:
                 del raw_isoform_exons_dict[chr_name][gene_name][isoform_name]
                 del gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
                 gene_isoforms_dict[chr_name][gene_name].remove(isoform_name)
