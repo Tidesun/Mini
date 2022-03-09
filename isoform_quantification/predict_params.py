@@ -13,7 +13,7 @@ class AbNET(nn.Module):
     def __init__(self, embedding_dim, hidden_dim_1,hidden_dim_2,n_output,n_replicates):
         super(AbNET, self).__init__()
         self.n_replicates = n_replicates
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim_1,bidirectional=True,num_layers=1).to(device)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim_1,bidirectional=True,num_layers=2).to(device)
         self.prelu = nn.LeakyReLU().to(device)
         self.batchnorm1 = nn.BatchNorm1d(hidden_dim_1+5, affine=False).to(device)
         self.batchnorm2 = nn.BatchNorm1d(hidden_dim_2, affine=False).to(device)

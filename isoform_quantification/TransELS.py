@@ -101,7 +101,7 @@ def generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,lo
     with open(f'{output_path}/training.pkl','wb') as f:
         pickle.dump(training_dict,f)
     print('DONE')
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=0):
+def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15):
     print(alpha)
     Path(output_path).mkdir(parents=True, exist_ok=True)
     print('Preprocessing...',flush=True)

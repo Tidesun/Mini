@@ -7,34 +7,53 @@ import numpy as np
 import concurrent.futures
 from util import sync_reference_name
 import pickle
+import copy
 ##########
 def split_and_sort_exons(gene_exons_dict):
     new_gene_exons_dict = {}
     for chr_name in gene_exons_dict:
         new_gene_exons_dict[chr_name] = {}
         for gene_name in gene_exons_dict[chr_name]:
-            exon_sorted = sorted(gene_exons_dict[chr_name][gene_name], key=itemgetter(0, 1))  # Sort by start position then end position
-            exon_points = []
-            for [begin,end] in exon_sorted:
-                exon_points.append((begin,'+'))
-                exon_points.append((end,'-'))
-            exon_points = sorted(exon_points,key=lambda x:x[0])
-            new_exon_sorted = [] 
-            last_begin = None
-            for offset,pm in exon_points:
-                if pm == '+':
-                    if last_begin is not None:
-                        new_exon_sorted.append([last_begin,offset])
-                    last_begin = offset
-                elif pm == '-':
-                    new_exon_sorted.append([last_begin,offset])
-                    last_begin = offset
-            if last_begin is not None:
-                new_exon_sorted.append([last_begin,offset])
-            # with open('/fs/ess/scratch/PCON0009/haoran/IDP/run_TransELS/TransELS/H1.pkl','wb') as f:
-            #     pickle.dump(new_exon_sorted,f)
+            new_exon_sorted = copy.deepcopy(gene_exons_dict[chr_name][gene_name])
+            new_exon_sorted = sorted(new_exon_sorted,key=lambda x:(x[0],x[1]))
+            i = 1
+            while (i < len(new_exon_sorted)):
+                if ((new_exon_sorted[i][0] == new_exon_sorted[i - 1][0]) and 
+                    (new_exon_sorted[i][1] == new_exon_sorted[i - 1][1])):
+                    del new_exon_sorted[i]  # Delete the repeated exon
+                elif (new_exon_sorted[i][0] <= new_exon_sorted[i - 1][1]):
+                    temp_exons = sorted([new_exon_sorted[i][0], new_exon_sorted[i - 1][0], new_exon_sorted[i][1], new_exon_sorted[i - 1][1]])
+                    del new_exon_sorted[i - 1]  # Delete the two overlapping exons
+                    del new_exon_sorted[i - 1]
+                    if (temp_exons[0] == temp_exons[1]):  # Based on two exons overlap type, re-generate 2 or 3 new ones
+                        new_exon_sorted.insert(i - 1, [temp_exons[1], temp_exons[2]])
+                        new_exon_sorted.insert(i , [temp_exons[2] + 1, temp_exons[3]])
+                    elif (temp_exons[2] == temp_exons[3]):
+                        new_exon_sorted.insert(i - 1, [temp_exons[0], temp_exons[1] - 1])
+                        new_exon_sorted.insert(i , [temp_exons[1], temp_exons[2]])
+                    else:
+                        new_exon_sorted.insert(i - 1, [temp_exons[0], temp_exons[1] - 1])
+                        new_exon_sorted.insert(i, [temp_exons[1], temp_exons[2]])
+                        new_exon_sorted.insert(i + 1, [temp_exons[2] + 1, temp_exons[3]])
+                    new_exon_sorted = sorted(new_exon_sorted, key=itemgetter(0, 1))  # re-sort the exon positions
+                else:
+                    i += 1
             new_exon_sorted = sorted(new_exon_sorted, key=itemgetter(0, 1))
-            new_gene_exons_dict[chr_name][gene_name] = [[start_pos,end_pos,end_pos - start_pos + 1] for [start_pos,end_pos] in new_exon_sorted if start_pos != end_pos]
+            # marginal_points = set()
+            # for [start_pos,end_pos] in new_exon_sorted:
+            #     if start_pos == end_pos:
+            #         marginal_points.add(start_pos+1)
+            # exon_sorted = []
+            # for [start_pos,end_pos] in new_exon_sorted:
+            #     if start_pos == end_pos:
+            #         continue
+            #     if start_pos in marginal_points:
+            #         start_pos -= 1
+            #     if end_pos in marginal_points:
+            #         end_pos -= 1
+            #     exon_sorted.append([start_pos,end_pos])
+            # exon_sorted =  sorted(exon_sorted, key=itemgetter(0, 1))
+            new_gene_exons_dict[chr_name][gene_name] = [[start_pos,end_pos,end_pos - start_pos + 1] for [start_pos,end_pos] in new_exon_sorted if start_pos < end_pos]
     return new_gene_exons_dict
 def cal_region_length(region_name,point_coord_dict):
     assert '-' in region_name or ':' in region_name
@@ -91,8 +110,8 @@ def generate_exon_indicator_for_isoform_single_gene(args):
             exon_region_name = 'P' + str(single_gene_gene_points_dict[p0]) + ':P' + str(single_gene_gene_points_dict[p1])
             if (exon_region_name not in isoform_exons):   # this exon is not in the isoform
                 continue
-            if (l<READ_JUNC_MIN_MAP_LEN):
-                continue
+            # if (l<READ_JUNC_MIN_MAP_LEN):
+            #     continue
             region_name = 'P{}:P{}'.format(str(single_gene_gene_points_dict[p0]),str(single_gene_gene_points_dict[p1]))
             for j in range(i+1,len(exon_list)):
                 p0_temp = exon_list[j][0]
@@ -101,6 +120,8 @@ def generate_exon_indicator_for_isoform_single_gene(args):
                 exon_region_name = 'P' + str(single_gene_gene_points_dict[p0_temp]) + ':P' + str(single_gene_gene_points_dict[p1_temp])
                 if (exon_region_name not in isoform_exons):   # this exon is not in the isoform
                     continue
+                # if (l_temp<READ_JUNC_MIN_MAP_LEN):
+                #     continue
                 if (region_name.split(':')[-1] == exon_region_name.split(':')[0]):
                     region_name += ':P{}'.format(str(single_gene_gene_points_dict[p1_temp]))
                 else:
@@ -114,13 +135,13 @@ def generate_exon_indicator_for_isoform_single_gene(args):
     for p in single_gene_gene_points_dict:
         point_coord_dict['P{}'.format(single_gene_gene_points_dict[p])] = int(p)
     # filter out region with short ending exon
-    region_names = list(single_gene_gene_regions_dict.keys())
-    for region in region_names:
-        if '-' in region:
-            last_exon = region.split('-')[-1]
-            last_exon_len = cal_region_length(last_exon,point_coord_dict)
-            if last_exon_len < READ_JUNC_MIN_MAP_LEN:
-                del single_gene_gene_regions_dict[region]
+    # region_names = list(single_gene_gene_regions_dict.keys())
+    # for region in region_names:
+    #     if '-' in region:
+    #         last_exon = region.split('-')[-1]
+    #         last_exon_len = cal_region_length(last_exon,point_coord_dict)
+    #         if last_exon_len < READ_JUNC_MIN_MAP_LEN:
+    #             del single_gene_gene_regions_dict[region]
     for region in single_gene_gene_regions_dict:
         region_len = cal_region_length(region,point_coord_dict)
         single_gene_regions_len_dict[region] = region_len
@@ -161,7 +182,7 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
 def is_same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
     if len(raw_isoform_exons_dict[isoform_A]['start_pos']) == len(raw_isoform_exons_dict[isoform_B]['start_pos']):
         for i in range(len(raw_isoform_exons_dict[isoform_A]['start_pos'])):
-            if raw_isoform_exons_dict[isoform_A]['start_pos'][i] != raw_isoform_exons_dict[isoform_B]['start_pos'][i] or raw_isoform_exons_dict[isoform_B]['end_pos'][i] != raw_isoform_exons_dict[isoform_B]['end_pos'][i]:
+            if raw_isoform_exons_dict[isoform_A]['start_pos'][i] != raw_isoform_exons_dict[isoform_B]['start_pos'][i] or raw_isoform_exons_dict[isoform_A]['end_pos'][i] != raw_isoform_exons_dict[isoform_B]['end_pos'][i]:
                 return False
         return True
     else:
@@ -189,7 +210,7 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
         # use 1 based index
         start_pos = int(fields[3])
         end_pos = int(fields[4])
-        if start_pos >= end_pos:
+        if start_pos > end_pos:
             continue
         # if chr_name in gene_exons_dict:
         #     if gene_name in gene_exons_dict[chr_name]:
@@ -254,6 +275,7 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                 del gene_isoforms_length_dict[chr_name][gene_name]
                 del gene_isoforms_dict[chr_name][gene_name]
                 del gene_points_dict[chr_name][gene_name]
+    raw_gene_exons_dict = copy.deepcopy(gene_exons_dict)
     gene_exons_dict = split_and_sort_exons(gene_exons_dict)
     # index the point position
     for chr_name in gene_exons_dict:
@@ -265,5 +287,5 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                         gene_points_dict[chr_name][gene_name][pos] = point_index
                         point_index += 1
     isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
-    return [gene_exons_dict, gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
+    return [gene_exons_dict,gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
             isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict]
