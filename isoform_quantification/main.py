@@ -1,4 +1,5 @@
 import argparse
+from ast import Str
 from TrEESR import TrEESR
 from TransELS import TransELS
 # import os
@@ -22,8 +23,6 @@ def parse_arguments():
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
     optional_TrEESR.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")
-    optional_TrEESR.add_argument('--READ_LEN',type=int,default=150, help="Short read length[default:150]")
-    optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int,default=15, help="Minimum mapping length to consider a junction.[default:15]")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -40,30 +39,31 @@ def parse_arguments():
     optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
-    optional_TransELS.add_argument('--filtering',type=str,default=False, help="Whether the very short long reads will be filtered[default:False][True,False]")
+    optional_TransELS.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
-    optional_TransELS.add_argument('--training',type=str,default=False, help="Generate training dict")
+    optional_TransELS.add_argument('--training',type=str,default='False', help="Generate training dict")
     optional_TransELS.add_argument('--DL_model',type=str,default=None,help='DL model to use')
     optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:linear_model]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
+    optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=15,help="READ_JUNC_MIN_MAP_LEN")
     args = parser.parse_args()
+    if args.filtering == 'True':
+        args.filtering = True
+    else:
+        args.filtering = False
+    if args.training == 'True':
+        args.training = True
+    else:
+        args.training = False
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
-        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads,args.READ_LEN,args.READ_JUNC_MIN_MAP_LEN)
+        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
     elif args.subparser_name in ['quantify','TransELS']:
-        if args.filtering == 'True':
-            args.filtering = True
-        else:
-            args.filtering = False
-        if args.training == 'True':
-            args.training = True
-        else:
-            args.training = False
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0
-            args.SR_quantification_option = 'Kallisto'
+            args.SR_quantification_option = 'Mili'
         if args.alpha != 1.0:
             if args.short_read_sam_path is None:
                 raise Exception('You need to provide a short read alignemnt file if the alpha is not 1!')
@@ -97,7 +97,7 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
         if args.DL_model is None:
             args.DL_model = args.SR_quantification_option + '.pt'
-        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads)
+        TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN)
     else:
         parser.print_help()
 if __name__ == "__main__":

@@ -63,7 +63,8 @@ def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,S
     # G = - np.concatenate((SR_isoform_region_matrix[SR_region_read_count_matrix>0,:], LR_isoform_region_matrix[LR_region_read_count_matrix>0,:]), axis=0)
     # h = - np.ones(G.shape[0])/(1/P)
     if assign_unique_mapping_option == 'linear_model':
-        isoform_expression = solve_qp(Q, c,G,h, lb = lb)
+        isoform_expression = solve_qp(Q, c,lb = lb)
+        # isoform_expression = solve_qp(Q, c,G,h, lb = lb)
     else:
         isoform_expression = solve_qp(Q, c,lb = lb)
     # isoform_expression = solve_qp(Q, c,lb = lb)
