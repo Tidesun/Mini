@@ -167,10 +167,15 @@ def create_new_matrix_dict(long_read_gene_matrix_dict,long_reads_isoform_region_
     new_long_read_gene_matrix_dict = long_read_gene_matrix_dict.copy()
     isoform_region_matrix = new_long_read_gene_matrix_dict['isoform_region_matrix']
     isoform_region_matrix[isoform_region_matrix != 0] = -1
-    for isoform_name in long_reads_isoform_region_weight_matrix_dict:
-        if isoform_name not in long_read_gene_matrix_dict['isoform_names_indics']:
-            continue
-        isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
+    for isoform_name in long_read_gene_matrix_dict['isoform_names_indics']:
+        if isoform_name not in long_reads_isoform_region_weight_matrix_dict:
+            split_isoform = isoform_name.split('-')[0]
+            if split_isoform not in long_reads_isoform_region_weight_matrix_dict:
+                continue
+            isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
+            isoform_name = split_isoform
+        else:
+            isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
         for region in long_reads_isoform_region_weight_matrix_dict[isoform_name]:
             if region not in long_read_gene_matrix_dict['region_names_indics']:
                 continue

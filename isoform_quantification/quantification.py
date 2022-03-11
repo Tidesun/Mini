@@ -79,17 +79,17 @@ def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,S
 
 def assign_reads(isoform_expression,A,b):
     # unique mapping reads
-    A = A.copy()
-    A[A!=0] = 1
-    unique_regions_index = A.sum(axis=1)==1
+    # A = A.copy()
+    unique_regions_index = np.count_nonzero(A,axis=1) == 1
     unique_A = A[unique_regions_index]
     unique_b = b[unique_regions_index]
+    unique_A[unique_A!=0] = 1
     unique_isoform_expression = unique_b.dot(unique_A)
     # multi mapping reads
-    multi_regions_index = (A.sum(axis=1)!=1) & (b!=0)
+    multi_regions_index = (np.count_nonzero(A,axis=1) > 1) & (b!=0)
     multi_A = A[multi_regions_index]
     multi_b = b[multi_regions_index]
-    if (A.dot(isoform_expression) == 0).any():
+    if (multi_A.dot(isoform_expression) == 0).any():
         if isoform_expression.sum() == 0:
             theta = isoform_expression + 1
             theta = theta/theta.sum()
