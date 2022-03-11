@@ -22,7 +22,7 @@ def parse_arguments():
     optional_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False)
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
-    optional_TrEESR.add_argument('--filtering',type=str,default='True', help="Whether the very short long reads will be filtered[default:True][True,False]")
+    optional_TrEESR.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:True][True,False]")
     optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
