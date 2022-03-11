@@ -22,7 +22,8 @@ def parse_arguments():
     optional_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False)
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons]")
-    optional_TrEESR.add_argument('--filtering',type=bool,default=True, help="Whether the very short long reads will be filtered[default:True][True,False]")
+    optional_TrEESR.add_argument('--filtering',type=str,default='True', help="Whether the very short long reads will be filtered[default:True][True,False]")
+    optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -45,21 +46,21 @@ def parse_arguments():
     optional_TransELS.add_argument('--DL_model',type=str,default=None,help='DL model to use')
     optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='manual_assign',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:manual_assign]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
-    optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=15,help="READ_JUNC_MIN_MAP_LEN")
+    optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
     else:
         args.filtering = False
-    if args.training == 'True':
-        args.training = True
-    else:
-        args.training = False
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
-        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads)
+        TrEESR(args.gtf_annotation_path,args.output_path,args.long_read_sam_path,args.sr_region_selection,args.filtering,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN)
     elif args.subparser_name in ['quantify','TransELS']:
+        if args.training == 'True':
+            args.training = True
+        else:
+            args.training = False
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0
