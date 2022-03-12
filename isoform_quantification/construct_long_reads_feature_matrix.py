@@ -3,7 +3,7 @@ from kde_weight_calculation import create_new_matrix_dict,cal_isoform_region_wei
 import numpy as np
 import pickle
 from construct_feature_matrix import calculate_condition_number,is_multi_isoform_region,get_condition_number
-
+import config
 def construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,region_names_indics,num_LRs,total_long_read_lengths):
     region_read_count_matrix = np.zeros((len(region_names_indics)))
     for region_name in region_read_count_dict:
@@ -22,6 +22,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
     #     long_reads_isoform_region_weight_matrix_dict = pickle.load(f)
     with open('/fs/ess/scratch/PCON0009/haoran/weight_calculation/weight_dict.pkl','rb') as f:
         long_reads_isoform_region_weight_matrix_dict = pickle.load(f)
+            
     # long_reads_isoform_region_weight_matrix_dict = cal_isoform_region_weight(gene_regions_dict,gene_region_len_dict,gene_isoforms_length_dict,READ_JUNC_MIN_MAP_LEN,output_dir,threads)
     # long_reads_isoform_region_weight_matrix_dict = {}
     gene_matrix_dict = dict()
@@ -61,9 +62,11 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
                     matrix_dict['multi_isoforms_count'] += count
                 else:
                     matrix_dict['unique_isoforms_count'] += count
-            if chr_name in long_reads_isoform_region_weight_matrix_dict:
-                if gene_name in long_reads_isoform_region_weight_matrix_dict[chr_name]:
-                    matrix_dict = create_new_matrix_dict(matrix_dict,long_reads_isoform_region_weight_matrix_dict[chr_name][gene_name])
+            if config.use_weight_matrix:
+                if chr_name in long_reads_isoform_region_weight_matrix_dict:
+                    if gene_name in long_reads_isoform_region_weight_matrix_dict[chr_name]:
+                        if len(long_reads_isoform_region_weight_matrix_dict[chr_name][gene_name]) > 0:
+                            matrix_dict = create_new_matrix_dict(matrix_dict,long_reads_isoform_region_weight_matrix_dict[chr_name][gene_name])
             # matrix_dict['condition_number']  = get_condition_number(matrix_dict['isoform_region_matrix'])
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 

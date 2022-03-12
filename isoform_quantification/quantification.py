@@ -4,6 +4,7 @@ from numpy import linalg as LA
 from qpsolvers import solve_qp
 from predict_params import load_model,predict_params
 import dill as pickle
+import config
 def normalize_expression(gene_isoform_expression_dict):
     gene_isoform_tpm_expression_dict = defaultdict(lambda: defaultdict(dict))
     SR_isoform_expression_sum = 0
@@ -63,8 +64,10 @@ def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,S
     # G = - np.concatenate((SR_isoform_region_matrix[SR_region_read_count_matrix>0,:], LR_isoform_region_matrix[LR_region_read_count_matrix>0,:]), axis=0)
     # h = - np.ones(G.shape[0])/(1/P)
     if assign_unique_mapping_option == 'linear_model':
-        isoform_expression = solve_qp(Q, c,lb = lb)
-        # isoform_expression = solve_qp(Q, c,G,h, lb = lb)
+        if config.use_weight_matrix:
+            isoform_expression = solve_qp(Q, c,lb = lb)
+        else:
+            isoform_expression = solve_qp(Q, c,G,h, lb = lb)
     else:
         isoform_expression = solve_qp(Q, c,lb = lb)
     # isoform_expression = solve_qp(Q, c,lb = lb)
@@ -122,7 +125,7 @@ def estimate_isoform_expression_single_gene(args):
         isoform_num_exons[isoform_names_indics[isoform_name]] = long_read_gene_matrix_dict['num_exons'][isoform_name]
     num_isoforms = SR_isoform_region_matrix.shape[1]
     if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
-        return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),0.5
+        return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),1.0
     if (beta == 'adaptive'):
         # beta_selections = [10**(-i) for i in range(1,10)]
         selected_beta = 1e-6

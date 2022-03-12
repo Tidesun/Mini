@@ -338,7 +338,7 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
                 best_overlapped_length = temp_overlapped_length
                 best_mapped_region_length = temp_mapped_region_length
                 best_genes.append(gname)
-            else:
+            elif temp_mapped_region_length < best_mapped_region_length:
                 best_regions = [temp_region]
                 best_overlapped_length = temp_overlapped_length
                 best_mapped_region_length = temp_mapped_region_length

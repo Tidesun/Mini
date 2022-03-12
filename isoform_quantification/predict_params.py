@@ -127,7 +127,7 @@ def predict_params(sr_A,sr_b,lr_A,lr_b,isoform_lengths,isoform_num_exons,model):
         alpha = params.item()
     except Exception as e:
         print(e)
-        alpha = 0.5
+        alpha = 1.0
     return alpha
 def load_model(model_path):
     rnn = AbNET(2,64,32,2,1).to(device)
