@@ -101,7 +101,13 @@ def calculate_condition_number(region_isoform_dict,isoform_names,normalize_A):
     region_names = region_isoform_dict.keys()
     (region_names_indics,isoform_names_indics) = construct_index(region_names,isoform_names)
     isoform_region_matrix = construct_isoform_region_matrix(region_isoform_dict,region_names_indics,isoform_names_indics,normalize_A)
-    condition_numbers = get_condition_number(isoform_region_matrix)
+    try:
+        condition_numbers = get_condition_number(isoform_region_matrix)
+    except:
+        # print(isoform_region_matrix)
+        # print(region_names_indics)
+        # print(isoform_names_indics)
+        condition_numbers = (np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'))
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
                    'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics}
     return matrix_dict
