@@ -36,10 +36,11 @@ def estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,S
         SR_b = SR_region_read_count_matrix / SR_region_read_count_matrix.sum()
     else:
         SR_b = SR_region_read_count_matrix.copy()
-    if LR_region_read_count_matrix.sum() != 0:
-        LR_b = LR_region_read_count_matrix / LR_region_read_count_matrix.sum()
-    else:
-        LR_b = LR_region_read_count_matrix.copy()
+    # if LR_region_read_count_matrix.sum() != 0:
+    #     LR_b = LR_region_read_count_matrix / LR_region_read_count_matrix.sum()
+    # else:
+    #     LR_b = LR_region_read_count_matrix.copy()
+    LR_b = LR_region_read_count_matrix.copy()
     alpha,beta = params['alpha'], params['beta']
     if SR_quantification_option != 'Mili':
         alpha = 1.0

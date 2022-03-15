@@ -308,5 +308,11 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                             del gene_regions_read_count[rname][gname][region]
         return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length
     else:
-        SR_read_len = 150
+        SR_read_len = READ_LEN
+        for rname in gene_regions_read_count.copy():
+            for gname in gene_regions_read_count[rname].copy():    
+                # region_lens = []
+                for region in gene_regions_read_count[rname][gname].copy():
+                    if gene_regions_read_count[rname][gname][region] == 0:
+                        del gene_regions_read_count[rname][gname][region]
         return gene_regions_read_count,SR_read_len,num_mapped_lines
