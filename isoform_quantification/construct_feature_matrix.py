@@ -158,7 +158,7 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
             region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
 
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,normalize_A)
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,False)
             matrix_dict['region_eff_length_dict'] = calculate_eff_length(region_len_dict,SR_read_len)
             matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_short_read(region_read_count_dict,matrix_dict['region_eff_length_dict'],matrix_dict['region_names_indics'],num_SRs)
             num_SRs_mapped_gene = 0

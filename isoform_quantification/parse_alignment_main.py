@@ -303,9 +303,9 @@ def parse_alignment(alignment_file_path,READ_LEN,READ_JUNC_MIN_MAP_LEN,gene_poin
                     num_long_reads += len(read_length_list)
 
                     if gene_regions_read_count[rname][gname][region] == 0:
-                        if region not in gene_full_length_region_dict[rname][gname]:
-                            del gene_regions_read_length[rname][gname][region]
-                            del gene_regions_read_count[rname][gname][region]
+                        # if region not in gene_full_length_region_dict[rname][gname]:
+                        del gene_regions_read_length[rname][gname][region]
+                        del gene_regions_read_count[rname][gname][region]
         return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length
     else:
         SR_read_len = READ_LEN

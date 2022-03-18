@@ -141,7 +141,7 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
         if short_read_alignment_file_path is not None:
             ref_genome = reference_genome
             SR_gene_isoform_expression_dict = SR_external_quantification(short_read_gene_matrix_dict,gene_isoforms_length_dict,SR_quantification_option,SR_fastq_list,SR_read_len,ref_file_path,ref_genome,output_path,threads)
-    # import dill as pickle
+    import dill as pickle
     # pickle.dump((long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,short_read_gene_matrix_dict),open(f'{output_path}/dict.pkl','wb'))
     gene_isoform_tpm_expression_dict,list_of_all_genes_chrs = quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,DL_model,alpha,beta,P,assign_unique_mapping_option)
     end_time = time.time()
@@ -149,7 +149,8 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # import dill as pickle
     # rep_name = output_path.split('/')[-2]
     # # rep_name = 1
-    # pickle.dump((short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_points_dict,SR_gene_regions_dict,LR_gene_regions_dict,gene_isoform_expression_dict,gene_isoform_tpm_expression_dict),open('/fs/project/PCON0009/Au-scratch2/haoran/quantification_evaluation/human_simulation/jobs/hybrid_simulation/validation/quantif_pkl/{}.p'.format(rep_name),'wb'))
+    with open(f'{output_path}/dict.pkl','wb') as f:
+        pickle.dump([long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict],f)
     print('Generating output...',flush=True)
     if training:
         generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path)

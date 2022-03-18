@@ -45,7 +45,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
             region_read_length = gene_regions_read_length[chr_name][gene_name]
 
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,normalize_A)
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,False)
             matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_long_read(region_read_length,region_read_count_dict,region_len_dict,matrix_dict['region_names_indics'],num_LRs,total_long_read_length)
             num_LRs_mapped_gene = 0
             for region in region_read_count_dict:

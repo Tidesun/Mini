@@ -26,6 +26,7 @@ def parse_arguments():
     optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons,real_data]")
     optional_TrEESR.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:True][True,False]")
     optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
+    optional_TrEESR.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -50,11 +51,13 @@ def parse_arguments():
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TransELS.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
+    optional_TransELS.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
     else:
         args.filtering = False
+    config.same_struc_isoform_handling = args.same_struc_isoform_handling
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
