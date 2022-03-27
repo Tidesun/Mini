@@ -47,7 +47,7 @@ def parse_arguments():
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
     optional_TransELS.add_argument('--training',type=str,default='False', help="Generate training dict")
     optional_TransELS.add_argument('--DL_model',type=str,default=None,help='DL model to use')
-    optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='manual_assign',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:manual_assign]')
+    optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:manual_assign]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TransELS.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")

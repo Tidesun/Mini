@@ -38,14 +38,13 @@ def parse_read_line(line, READ_LEN):
     read_start_pos = int(fields[3])
     cigar_field = fields[5]
     read_len_list = []
-    read_len = 0
+    mapped_read_len = 0
     # if (len(set(cigar_field) - valid_cigar) > 0):
     #     cigar_field = '*'
     if (cigar_field != '*'):
         cigar_list = re.split(r'(M|N|I|D|S|=|X|H|P)', cigar_field)
         read_len_list = []
         seg_len = 0
-        read_len = 0 
         M = 1
         for idx in range(len(cigar_list)//2):
             if (cigar_list[2 * idx + 1] in ['M','=','X']):
@@ -53,7 +52,7 @@ def parse_read_line(line, READ_LEN):
                     read_len_list.append(seg_len)
                     seg_len = 0
                 seg_len += int(cigar_list[2 * idx])
-                read_len += int(cigar_list[2 * idx])
+                mapped_read_len += int(cigar_list[2 * idx])
                 M = 1
             elif (cigar_list[2 * idx + 1] == 'N'):
                 if (M == 1):  # Mode is changed
@@ -65,13 +64,13 @@ def parse_read_line(line, READ_LEN):
                 if (M == 0):  # Mode is changed
                     read_len_list.append(seg_len)
                     seg_len = 0
-                else:
-                    seg_len += int(cigar_list[2 * idx])
+                seg_len += int(cigar_list[2 * idx])
+                M = 1
             elif (cigar_list[2 * idx + 1] in ['I','S','H']):  # Insertion in reference
                 if (M == 0):  # Mode is changed
                     read_len_list.append(seg_len)
                     seg_len = 0
-                read_len +=  int(cigar_list[2 * idx])
+                mapped_read_len +=  int(cigar_list[2 * idx])
         read_len_list.append(seg_len)                
     else:
         read_len_list = []
@@ -165,6 +164,8 @@ def compute_overlapped_length(region_dict,seg_start,seg_end):
 
 ##########
 def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tree,gene_region_dict,read_name,READ_JUNC_MIN_MAP_LEN):
+    tolerance = 20
+    junc_tolerance = 5
     read_segments = []
     curr_pos = read_start_pos
     for i in range(len(read_len_list)):
@@ -178,9 +179,8 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
             return '',0,1
     for j in range(len(read_segments)):
         [seg_start,seg_end] = read_segments[j]
-        exons = [[exon.begin,exon.end - 1] for exon in gene_interval_tree.overlap(seg_start-1,seg_end+2)]
+        exons = [[exon.begin,exon.end - 1] for exon in gene_interval_tree.overlap(seg_start-junc_tolerance,seg_end+junc_tolerance)]
         exons = sorted(exons,key=lambda exon:exon[0],reverse=False)
-                        
         possible_exon_regions = []
         if len(exons) > 0:
             exons = sorted(exons,key=lambda exon:exon[0],reverse=True)
@@ -188,17 +188,20 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
                 temp_exon_regions = []
                 [exon_start,exon_end] = exons[exon_start_idx]
                 if j != len(read_segments) - 1:
-                    if not (exon_end == seg_end or abs(exon_end - seg_end) <= 2):
+                    if not abs(exon_end - seg_end) <= junc_tolerance:
+                        continue
+                if j == len(read_segments) - 1:
+                    if exon_end < seg_end and seg_end - exon_end > tolerance:
                         continue
                 exon_region_name = 'P{}:P{}'.format(points_dict[exon_start],points_dict[exon_end])
-                possible_exon_regions.append({'start':exon_start,'end':exon_end,'length':exon_end - exon_start + 1,'region':exon_region_name})
+                temp_exon_regions.append({'start':exon_start,'end':exon_end,'length':exon_end - exon_start + 1,'region':exon_region_name})
                 curr_region_start,curr_region_end = exon_start,exon_end
                 for [exon_start,exon_end] in exons[exon_start_idx + 1:]:
                     if exon_end == curr_region_start:
                         exon_region_name = 'P{}:{}'.format(points_dict[exon_start],exon_region_name)
                         curr_region_start = exon_start
                         temp_exon_regions.append({'start':exon_start,'end':curr_region_end,'length':curr_region_end - exon_start + 1,'region':exon_region_name})
-                    elif exon_end == curr_region_start - 1 or exon_end == curr_region_start - 2:
+                    elif curr_region_start - exon_end <= junc_tolerance:
                         exon_region_name = 'P{}:P{}-{}'.format(points_dict[exon_start],points_dict[exon_end],exon_region_name)
                         curr_region_start = exon_start
                         temp_exon_regions.append({'start':exon_start,'end':curr_region_end,'length':curr_region_end - exon_start + 1,'region':exon_region_name})
@@ -207,10 +210,16 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
                 for exon_region in temp_exon_regions:
                     exon_start = exon_region['start']
                     if j!= 0:
-                        if not (exon_start == seg_start or abs(exon_start - seg_start) <= 2):
+                        if not (abs(exon_start - seg_start) <= junc_tolerance):
+                            continue
+                    if j == 0:
+                        if exon_start > seg_start and exon_start - seg_start > tolerance:
                             continue
                     possible_exon_regions.append(exon_region)
         all_possible_exon_regions.append(possible_exon_regions)
+    for possible_exon_regions in all_possible_exon_regions:
+        if len(possible_exon_regions) == 0:
+            return '',0,1
     best_regions = []
     for read_segment,possible_exon_regions in zip(read_segments,all_possible_exon_regions):
         [seg_start,seg_end] = read_segment
@@ -221,7 +230,7 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
                 new_mapped_region_length = region_dict['length']
                 best_regions.append((new_connected_region,new_overlapped_length,new_mapped_region_length))
             best_regions = sorted(best_regions,key=lambda x:(x[1],x[1]/x[2]),reverse=True)
-            best_regions = best_regions[:5]
+            best_regions = best_regions
         else:
             new_best_regions = []
             for (connected_region,overlapped_length,mapped_region_length) in best_regions:
@@ -232,7 +241,7 @@ def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tr
                         new_mapped_region_length = mapped_region_length + region_dict['length']
                         new_best_regions.append((new_connected_region,new_overlapped_length,new_mapped_region_length))
             best_regions = sorted(new_best_regions,key=lambda x:(x[1],x[1]/x[2]),reverse=True)
-            best_regions = best_regions[:5]
+            best_regions = best_regions
     for (connected_region,overlapped_length,mapped_region_length) in best_regions:
         if connected_region in gene_region_dict:
             return connected_region,overlapped_length,mapped_region_length
@@ -293,6 +302,7 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
              READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST,parsed_line):
     # mapping = {}
     [read_name, read_start_pos, rname, read_len_list] = parsed_line
+    tolerance = 20
     # mapping = {'read_name':read_name,'read_start_pos':read_start_pos,'rname':rname,'read_len':read_len_list,'mapping_area':[],'read_mapped':False}
     mapping = {'read_name':read_name,'read_mapped':False,'mapping_area':[]}
     if (rname not in CHR_LIST):
@@ -304,32 +314,23 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
         read_end_pos += i
     read_length = comp_read_len(read_len_list)
     mapping['read_length'] = read_length
-    start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos)
-    end_index = bisect.bisect_left(end_pos_list[rname], read_end_pos)
+    # mapping['read_pos'] = (read_start_pos,read_end_pos)
+    if read_end_pos - read_start_pos > 2 * tolerance:
+        start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos+tolerance)
+        end_index = bisect.bisect_left(end_pos_list[rname], read_end_pos-tolerance)
+    else:
+        start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos+2)
+        end_index = bisect.bisect_left(end_pos_list[rname], read_end_pos-2)
     gene_candidates = (set(end_gname_list[rname][end_index:]) & set(start_gname_list[rname][:start_index])) 
     best_overlapped_length = 0
     best_mapped_region_length = 1
     best_regions = []
     best_genes = []
-    # is_problem = False
-    # if 'ENST00000637539' in read_name:
-    #     is_problem = True
     for gname in gene_candidates:
         points_dict = gene_points_dict[rname][gname]
         gene_interval_tree = gene_interval_tree_dict[rname][gname]
-        # if read_name == 'ENST00000013125.9_65373_4':
-        #     import dill as pickle
-        #     # dumped = [read_start_pos,read_end_pos,start_pos_list[rname],end_pos_list[rname],end_gname_list[rname],start_gname_list[rname]]
-        #     with open('temp.pkl','wb') as f:
-        #         pickle.dump([gene_points_dict,gene_interval_tree_dict,gene_regions_dict, 
-        #      start_pos_list, start_gname_list, end_pos_list, end_gname_list,
-        #      READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST,parsed_line],f)
         temp_region,temp_overlapped_length,temp_mapped_region_length= map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tree,gene_regions_dict[rname][gname],read_name,READ_JUNC_MIN_MAP_LEN)
-        # if is_problem:
-        #     print(gname)
-        #     print(temp_region)
-        #     print(temp_overlapped_length)
-        #     print(temp_mapped_region_length)
+
         if temp_region == '':
             continue
         if abs(temp_overlapped_length-best_overlapped_length) <= 2:
