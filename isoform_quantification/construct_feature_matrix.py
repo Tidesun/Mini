@@ -32,8 +32,10 @@ def calculate_eff_length(region_len_dict,SR_read_len):
         region_len = region_len_dict[region_name]
         if check_region_type(region_name) in ['two_exons','one_junction']:
             region_eff_length = SR_read_len - 1
-        else:
+        elif check_region_type(region_name) == 'one_exon':
             region_eff_length = region_len - SR_read_len + 1 if SR_read_len < region_len else 1
+        # multi_exon_region
+        # SR_read_len - inner_region_len - alpha
         region_eff_length_dict[region_name] = region_eff_length
     return region_eff_length_dict
 def construct_region_abundance_matrix_short_read(region_read_count_dict,region_eff_length_dict,region_names_indics,num_SRs):

@@ -12,6 +12,10 @@ def sync_reference_name(ref_name):
     if '_' in ref_name:
         ref_name = ''
     return ref_name
+def cal_inner_region_len(region_name,region_len_dict):
+    inner_region = ':'.join(region_name.split(':')[1:-1])
+    inner_region_len = region_len_dict[inner_region]
+    return inner_region_len
 def get_very_short_isoforms(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict,isoform_length_dict):
     short_isoform_genes = set()
     short_isoforms = set()

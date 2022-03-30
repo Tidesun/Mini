@@ -9,6 +9,7 @@ from util import sync_reference_name
 import pickle
 import copy
 import config
+from patch_mp import patch_mp_connection_bpo_17560
 ##########
 def split_and_sort_exons(gene_exons_dict):
     new_gene_exons_dict = {}
@@ -189,6 +190,7 @@ def is_same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
     else:
         return False
 def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+    patch_mp_connection_bpo_17560()
     #gene_points_dict store the index of the point value in ascending order for each gene
     file_read = open(ref_annotation_path, 'r')
     gene_exons_dict,gene_points_dict,gene_isoforms_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = {},{},{},{},{}

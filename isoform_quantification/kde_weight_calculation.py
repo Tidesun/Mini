@@ -170,19 +170,20 @@ def create_new_matrix_dict(long_read_gene_matrix_dict,long_reads_isoform_region_
     isoform_region_matrix[isoform_region_matrix != 0] = -1
     for isoform_name in long_read_gene_matrix_dict['isoform_names_indics']:
         if isoform_name not in long_reads_isoform_region_weight_matrix_dict:
-            split_isoform = isoform_name.split('-')[0]
-            if split_isoform not in long_reads_isoform_region_weight_matrix_dict:
-                continue
-            isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
-            isoform_name = split_isoform
+            for split_isoform in isoform_name.split('-'):
+                if split_isoform in long_reads_isoform_region_weight_matrix_dict:
+                    isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
+                    isoform_name = split_isoform
+                    break
         else:
             isoform_index = long_read_gene_matrix_dict['isoform_names_indics'][isoform_name]
-        for region in long_reads_isoform_region_weight_matrix_dict[isoform_name]:
-            if region not in long_read_gene_matrix_dict['region_names_indics']:
-                continue
-            region_index = long_read_gene_matrix_dict['region_names_indics'][region]
-            if isoform_region_matrix[region_index][isoform_index] == -1:
-                isoform_region_matrix[region_index][isoform_index] = long_reads_isoform_region_weight_matrix_dict[isoform_name][region]
+        if isoform_name in long_reads_isoform_region_weight_matrix_dict:
+            for region in long_reads_isoform_region_weight_matrix_dict[isoform_name]:
+                if region not in long_read_gene_matrix_dict['region_names_indics']:
+                    continue
+                region_index = long_read_gene_matrix_dict['region_names_indics'][region]
+                if isoform_region_matrix[region_index][isoform_index] == -1:
+                    isoform_region_matrix[region_index][isoform_index] = long_reads_isoform_region_weight_matrix_dict[isoform_name][region]
     isoform_region_matrix[isoform_region_matrix == -1] = 0
     sum_A = isoform_region_matrix.sum(axis=0)
     sum_A[sum_A==0] = 1

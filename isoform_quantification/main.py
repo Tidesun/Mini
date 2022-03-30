@@ -52,6 +52,7 @@ def parse_arguments():
     optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TransELS.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
     optional_TransELS.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
+    optional_TransELS.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
@@ -71,6 +72,7 @@ def parse_arguments():
             config.use_weight_matrix = True
         else:
             config.use_weight_matrix = False
+        config.add_full_length_region = args.add_full_length_region
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0
