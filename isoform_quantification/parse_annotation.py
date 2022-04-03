@@ -71,7 +71,7 @@ def cal_region_length(region_name,point_coord_dict):
     return length
 ##########
 def generate_exon_indicator_for_isoform_single_gene(args):
-    single_gene_raw_isoform_exons_dict,exon_list,single_gene_gene_points_dict,READ_LEN,READ_JUNC_MIN_MAP_LEN = args
+    single_gene_raw_isoform_exons_dict,exon_list,single_gene_gene_points_dict = args
     single_gene_isoforms_regions_len_dict,single_gene_gene_regions_dict = {},{}
     for isoform_name in single_gene_raw_isoform_exons_dict:
         isoform_exons = []
@@ -156,7 +156,7 @@ def generate_exon_indicator_for_isoform_single_gene(args):
                     single_gene_isoforms_regions_len_dict[isoform_name] = region_len
 
     return single_gene_isoforms_regions_len_dict,single_gene_gene_regions_dict,single_gene_regions_len_dict
-def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_isoform_exons_dict,threads):
     isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = {},{},{}
     for chr_name in raw_isoform_exons_dict:
         isoforms_regions_len_dict[chr_name],gene_regions_dict[chr_name],genes_regions_len_dict[chr_name] = {},{},{}
@@ -164,10 +164,10 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
     if threads == 1:
         for chr_name in raw_isoform_exons_dict:
             for gene_name in raw_isoform_exons_dict[chr_name]:
-                isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN))
+                isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name]))
     else:
         list_of_all_genes_chrs = [(gene_name,chr_name) for chr_name in raw_isoform_exons_dict for gene_name in raw_isoform_exons_dict[chr_name]]
-        list_of_args = [(raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN) for chr_name in raw_isoform_exons_dict for gene_name in raw_isoform_exons_dict[chr_name]]
+        list_of_args = [(raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name]) for chr_name in raw_isoform_exons_dict for gene_name in raw_isoform_exons_dict[chr_name]]
         chunksize, extra = divmod(len(list_of_all_genes_chrs), threads)
         if extra:
             chunksize += 1
@@ -178,7 +178,7 @@ def generate_exon_indicator_for_isoform(gene_exons_dict,gene_points_dict,raw_iso
     # No parralize
     # for chr_name in raw_isoform_exons_dict:
     #     for gene_name in raw_isoform_exons_dict[chr_name]:
-    #         isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name],READ_LEN,READ_JUNC_MIN_MAP_LEN))
+    #         isoforms_regions_len_dict[chr_name][gene_name],gene_regions_dict[chr_name][gene_name],genes_regions_len_dict[chr_name][gene_name] = generate_exon_indicator_for_isoform_single_gene((raw_isoform_exons_dict[chr_name][gene_name],gene_exons_dict[chr_name][gene_name],gene_points_dict[chr_name][gene_name]))
     return isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict
 #######################
 def is_same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
@@ -189,7 +189,7 @@ def is_same_structure_isoform(raw_isoform_exons_dict,isoform_A,isoform_B):
         return True
     else:
         return False
-def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN):
+def parse_annotation(ref_annotation_path,threads):
     patch_mp_connection_bpo_17560()
     #gene_points_dict store the index of the point value in ascending order for each gene
     file_read = open(ref_annotation_path, 'r')
@@ -301,6 +301,6 @@ def parse_annotation(ref_annotation_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
                     if pos not in gene_points_dict[chr_name][gene_name]:
                         gene_points_dict[chr_name][gene_name][pos] = point_index
                         point_index += 1
-    isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
+    isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads)
     return [gene_exons_dict,gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
             isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict]

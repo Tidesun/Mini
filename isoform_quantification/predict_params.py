@@ -90,23 +90,17 @@ def get_batch_data(all_sr_A_list,all_lr_A_list,all_sr_b_list,all_lr_b_list,all_s
         # for each replicate of gene
         multi_replicate_tpm = []
         for sr_A,lr_A,sr_b,lr_b,sr_tpm,lr_tpm,i in zip(sr_A_list,lr_A_list,sr_b_list,lr_b_list,sr_TPM,lr_TPM,range(len(sr_A_list))):
-            sr_A_tensor = torch.unsqueeze(torch.count_nonzero(sr_A,dim=1),1).to(device)
-            lr_A_tensor = torch.unsqueeze(torch.count_nonzero(lr_A,dim=1),1).to(device)
+            sr_tensor = torch.stack([torch.flatten(sr_A),sr_b.repeat_interleave(sr_A.shape[1])],1).to(device)
+            lr_tensor = torch.stack([torch.flatten(lr_A),lr_b.repeat_interleave(lr_A.shape[1])],1).to(device)
             sr_region_per_transcript_tensor = torch.unsqueeze(torch.count_nonzero(sr_A,dim=0),1).to(device)
             lr_region_per_transcript_tensor = torch.unsqueeze(torch.count_nonzero(lr_A,dim=0),1).to(device)
-            sr_b_tensor = torch.unsqueeze(sr_b,1).to(device)
-            if sr_b_tensor.sum() != 0:
-                sr_b_tensor = sr_b_tensor/sr_b_tensor.sum()
-            lr_b_tensor = torch.unsqueeze(lr_b,1).to(device)
-            if lr_b_tensor.sum() != 0:
-                lr_b_tensor = lr_b_tensor/lr_b_tensor.sum()
             coverage = torch.stack([sr_b.sum(),lr_b.sum()]).to(device)
             condition_number = torch.stack([get_generalized_condition_number(sr_A),get_generalized_condition_number(lr_A)]).to(device)
-            Ab_tensor = torch.cat([torch.cat([sr_A_tensor,lr_A_tensor],0),torch.cat([sr_b_tensor,lr_b_tensor],0)],1)
+            Ab_tensor = torch.cat([sr_tensor,lr_tensor],0).to(device)
             transcript_features_tensor_1 = torch.cat([sr_region_per_transcript_tensor,lr_region_per_transcript_tensor],1)
             transcript_features_tensor_2 = torch.cat([num_exons_per_transcript,isoform_length_per_transcript],1)
             tpm_tensor = torch.stack([sr_tpm,lr_tpm],axis=1).to(device)
-            num_isoforms = torch.Tensor([sr_A_tensor.shape[1]]).to(device)
+            num_isoforms = torch.Tensor([sr_A.shape[1]]).to(device)
             feature_tensor_1 = torch.cat([Ab_tensor,transcript_features_tensor_1,transcript_features_tensor_2])
             feature_tensor_2 = torch.cat([condition_number,coverage,num_isoforms])        
             all_variable_features.append(feature_tensor_1)
@@ -127,7 +121,7 @@ def predict_params(sr_A,sr_b,lr_A,lr_b,isoform_lengths,isoform_num_exons,model):
         alpha = params.item()
     except Exception as e:
         print(e)
-        alpha = 1.0
+        alpha = 0.5
     return alpha
 def load_model(model_path):
     rnn = AbNET(2,64,32,2,1).to(device)

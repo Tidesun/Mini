@@ -1,3 +1,10 @@
 use_weight_matrix = True
 same_struc_isoform_handling = 'merge'
 add_full_length_region = 'all'
+READ_JUNC_MIN_MAP_LEN = 15
+multi_exon_region_weight = 'regular'
+output_matrix_info = False
+normalize_sr_A = False
+sr_region_selection = 'real_data'
+keep_sr_exon_region = True
+normalize_lr_A = True

@@ -2,6 +2,7 @@ import re
 from collections import defaultdict
 import numpy as np
 import pandas as pd
+import io
 def sync_reference_name(ref_name):
     ref_name = ref_name.upper()
     match = re.search("(?<=CHR).*", ref_name)
@@ -12,10 +13,73 @@ def sync_reference_name(ref_name):
     if '_' in ref_name:
         ref_name = ''
     return ref_name
+def check_region_type(region_name):
+    if ((region_name.count(':') == 1) and ('-' not in region_name)):
+        return 'one_exon'
+    elif ((region_name.count(':') == 2) and ('-' not in region_name)):
+        return 'two_exons'
+    elif (region_name.count('-') == 1):
+        return 'one_junction'
+    elif ((region_name.count(':') > 2) and ('-' not in region_name)):
+        return 'exons'
+    else:
+        return 'junctions'
 def cal_inner_region_len(region_name,region_len_dict):
-    inner_region = ':'.join(region_name.split(':')[1:-1])
-    inner_region_len = region_len_dict[inner_region]
+    if check_region_type(region_name) == 'exons':
+        inner_region = ':'.join(region_name.split(':')[1:-1])
+        inner_region_len = region_len_dict[inner_region]
+    elif check_region_type(region_name) == 'junctions':
+        inner_region = '-'.join(region_name.split('-')[1:-1])
+        inner_region_len = region_len_dict[inner_region]
     return inner_region_len
+def get_coord(region,gene_points_dict,rname,gname):
+    reverse_dict = {}
+    for coord,index in gene_points_dict[rname][gname].items():
+        reverse_dict[f'P{index}'] = coord
+    junctions = region.split('-')
+    all_coords = []
+    for exon_region in junctions:
+        points = exon_region.split(':')
+        coords = []
+        for pt in points:
+            coords.append(str(reverse_dict[pt]))
+        all_coords.append(':'.join(coords))
+    return '-'.join(all_coords)
+def output_matrix_info(short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_points_dict,output_path):
+    bio = io.BytesIO()
+    for gname,rname in list_of_all_genes_chrs:
+        bio.write(str.encode('{}\n'.format(gname)))
+        all_isoforms = long_read_gene_matrix_dict[rname][gname]['isoform_names_indics'].keys()
+        bio.write(str.encode('{}\n'.format(','.join(all_isoforms))))
+        bio.write(str.encode('----------------------------\n'))
+        SR_all_coord_region = []
+        LR_all_coord_region = []
+        for region,index in short_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
+            SR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
+        for region,index in long_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
+            LR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
+        lr_A = long_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
+        sr_A = short_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
+        
+        bio.write(str.encode('SR_A\n'))
+        np.savetxt(bio, sr_A,fmt='%1.3f',delimiter=',')
+        if 'region_abund_matrix' in short_read_gene_matrix_dict[rname][gname]:
+            sr_b = short_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
+            bio.write(str.encode('SR_b\n'))
+            np.savetxt(bio, sr_b,fmt='%1.3f',delimiter=',')
+            bio.write(str.encode('{}\n'.format(','.join(SR_all_coord_region))))
+            bio.write(str.encode('{}\n'.format(short_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
+        bio.write(str.encode('LR_A\n'))
+        np.savetxt(bio, lr_A,fmt='%1.3f',delimiter=',')
+        if 'region_abund_matrix' in long_read_gene_matrix_dict[rname][gname]:
+            lr_b = long_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
+            bio.write(str.encode('LR_b\n'))
+            np.savetxt(bio, lr_b,fmt='%1.3f',delimiter=',')
+            bio.write(str.encode('{}\n'.format(','.join(LR_all_coord_region))))
+            bio.write(str.encode('{}\n'.format(long_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
+        out_str = bio.getvalue().decode('latin1')
+        with open(output_path+'/info.out','w') as f:
+            f.write(out_str)
 def get_very_short_isoforms(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict,isoform_length_dict):
     short_isoform_genes = set()
     short_isoforms = set()

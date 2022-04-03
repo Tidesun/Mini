@@ -23,10 +23,17 @@ def parse_arguments():
     optional_TrEESR.add_argument('-srsam','--short_read_sam_path', type=str, help="The path of short read sam file",required=False)
     optional_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False)
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
-    optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:read_length][read_length,num_exons,real_data]")
+    optional_TrEESR.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_TrEESR.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:True][True,False]")
     optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TrEESR.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
+    optional_TrEESR.add_argument('--multi_exon_region_weight',type=str, default='regular',help="The weight in matrix A for multi_exon_region[default:regular][regular,minus_inner_region]")
+    optional_TrEESR.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix info [default:False] [True,False]")
+    optional_TrEESR.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
+    optional_TrEESR.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
+    optional_TrEESR.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
+    optional_TrEESR.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
+    optional_TrEESR.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -51,14 +58,44 @@ def parse_arguments():
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TransELS.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
+    optional_TransELS.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
     optional_TransELS.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
     optional_TransELS.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
+    optional_TransELS.add_argument('--multi_exon_region_weight',type=str, default='regular',help="The weight in matrix A for multi_exon_region[default:regular][regular,minus_inner_region]")
+    optional_TransELS.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix inof [default:False] [True,False]")
+    optional_TransELS.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
+    optional_TransELS.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
+    optional_TransELS.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
     else:
         args.filtering = False
     config.same_struc_isoform_handling = args.same_struc_isoform_handling
+    config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
+    config.multi_exon_region_weight = args.multi_exon_region_weight
+    config.sr_region_selection = args.sr_region_selection
+    if args.output_matrix_info == 'True':
+        config.output_matrix_info = True
+    else:
+        config.output_matrix_info = False
+    if args.keep_sr_exon_region == 'True':
+        config.keep_sr_exon_region = True
+    else:
+        config.keep_sr_exon_region = False
+    if args.normalize_sr_A == 'True':
+        config.normalize_sr_A = True
+    else:
+        config.normalize_sr_A = False
+    if args.normalize_lr_A == 'True':
+        config.normalize_lr_A = True
+    else:
+        config.normalize_lr_A = False
+    if args.use_weight_matrix == 'True':
+        config.use_weight_matrix = True
+    else:
+        config.use_weight_matrix = False
+    config.add_full_length_region = args.add_full_length_region
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
@@ -68,11 +105,6 @@ def parse_arguments():
             args.training = True
         else:
             args.training = False
-        if args.use_weight_matrix == 'True':
-            config.use_weight_matrix = True
-        else:
-            config.use_weight_matrix = False
-        config.add_full_length_region = args.add_full_length_region
         print('Isoform quantification',flush=True)
         if (args.short_read_sam_path is None) or (args.alpha == 1.0):
             args.alpha = 1.0

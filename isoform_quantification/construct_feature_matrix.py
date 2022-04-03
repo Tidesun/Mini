@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import linalg as LA
-
+from util import check_region_type,cal_inner_region_len
+import config
 def construct_index(region_names,isoform_names):
     # indexing the region names and isoform names
     region_names_indics = {x:i for i,x in enumerate(region_names)}
@@ -17,25 +18,31 @@ def construct_isoform_region_matrix(isoform_region_dict,region_names_indics,isof
         sum_A[sum_A==0] = 1
         isoform_region_matrix = isoform_region_matrix/sum_A
     return isoform_region_matrix
-def check_region_type(region_name):
-    if ((region_name.count(':') == 2) and ('-' not in region_name)):
-        return 'two_exons'
-    elif ('-' in region_name and region_name.count(':') == 2):
-        return 'one_junction'
-    elif ((region_name.count(':') == 1) and ('-' not in region_name)):
-        return 'one_exon'
-    else:
-        return 'others'
 def calculate_eff_length(region_len_dict,SR_read_len):
     region_eff_length_dict = {}
     for region_name in region_len_dict:
         region_len = region_len_dict[region_name]
-        if check_region_type(region_name) in ['two_exons','one_junction']:
+        if check_region_type(region_name) == 'one_junction':
+            region_eff_length = SR_read_len - config.READ_JUNC_MIN_MAP_LEN
+        elif check_region_type(region_name) == 'two_exons':
             region_eff_length = SR_read_len - 1
         elif check_region_type(region_name) == 'one_exon':
             region_eff_length = region_len - SR_read_len + 1 if SR_read_len < region_len else 1
-        # multi_exon_region
-        # SR_read_len - inner_region_len - alpha
+        # else:
+        #     try:
+        #         inner_region_len = cal_inner_region_len(region_name,region_len_dict)
+        #     except:
+        #         print(region_len_dict)
+        #         print(region_name)
+        #     region_eff_length = SR_read_len - config.READ_JUNC_MIN_MAP_LEN
+        elif check_region_type(region_name) == 'exons':
+            inner_region_len = cal_inner_region_len(region_name,region_len_dict)
+            region_eff_length =  SR_read_len - inner_region_len - 1
+        elif check_region_type(region_name) == 'junctions':
+            inner_region_len = cal_inner_region_len(region_name,region_len_dict)
+            region_eff_length = SR_read_len - inner_region_len - config.READ_JUNC_MIN_MAP_LEN
+        if region_eff_length <= 0 :
+            region_eff_length = 1
         region_eff_length_dict[region_name] = region_eff_length
     return region_eff_length_dict
 def construct_region_abundance_matrix_short_read(region_read_count_dict,region_eff_length_dict,region_names_indics,num_SRs):
@@ -113,6 +120,19 @@ def calculate_condition_number(region_isoform_dict,isoform_names,normalize_A):
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
                    'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics}
     return matrix_dict
+def cal_weight_multi_exon_region(short_read_gene_matrix_dict,region_len_dict,SR_read_len):
+    isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix'].copy()
+    for isoform_name,isoform_index in short_read_gene_matrix_dict['isoform_names_indics'].items():
+        for region,region_index in short_read_gene_matrix_dict['region_names_indics'].items():
+            if isoform_region_matrix[region_index][isoform_index] != 0:
+                if check_region_type(region) in ['junctions','exons']:
+                    inner_region_len = cal_inner_region_len(region,region_len_dict)
+                    weight = (SR_read_len - inner_region_len - 1)/SR_read_len
+                    if weight <= 0 or weight > 1:
+                        weight = 1
+                    isoform_region_matrix[region_index][isoform_index] = weight
+    return isoform_region_matrix
+
 # def filter_regions(regions_dict,long_read = False):
 #     filtered_regions_dict = {}
 #     for region_name in regions_dict:
@@ -141,7 +161,7 @@ def calculate_all_condition_number(gene_isoforms_dict,gene_regions_dict,allow_mu
             #     region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=False)
             # else:
             #     region_isoform_dict = filter_regions(gene_regions_dict[chr_name][gene_name],long_read=True)
-            gene_matrix_dict[chr_name][gene_name] = calculate_condition_number(region_isoform_dict,isoform_names,False)
+            gene_matrix_dict[chr_name][gene_name] = calculate_condition_number(region_isoform_dict,isoform_names,config.normalize_sr_A)
     return gene_matrix_dict
 def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,SR_read_len,gene_region_len_dict,num_SRs,normalize_A=True):
     gene_matrix_dict = dict()
@@ -159,9 +179,16 @@ def generate_all_feature_matrix_short_read(gene_isoforms_dict,gene_regions_dict,
             # region_isoform_dict = gene_regions_dict[chr_name][gene_name]
             region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
-
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,False)
+    
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,config.normalize_sr_A)
             matrix_dict['region_eff_length_dict'] = calculate_eff_length(region_len_dict,SR_read_len)
+            if config.multi_exon_region_weight == 'minus_inner_region':
+                matrix_dict['isoform_region_matrix'] = cal_weight_multi_exon_region(matrix_dict,region_len_dict,SR_read_len)
+                if config.normalize_sr_A:
+                    sum_A = matrix_dict['isoform_region_matrix'].sum(axis=0)
+                    sum_A[sum_A==0] = 1
+                    matrix_dict['isoform_region_matrix'] = matrix_dict['isoform_region_matrix']/sum_A
+                matrix_dict['condition_number'] = get_condition_number(matrix_dict['isoform_region_matrix'])
             matrix_dict['region_abund_matrix'] = construct_region_abundance_matrix_short_read(region_read_count_dict,matrix_dict['region_eff_length_dict'],matrix_dict['region_names_indics'],num_SRs)
             num_SRs_mapped_gene = 0
             for region in region_read_count_dict:

@@ -27,7 +27,7 @@ def update_missing_points(points_idx, points):
 
 ### Extract the SAM read information
 ##########
-def parse_read_line(line, READ_LEN):
+def parse_read_line(line ):
     
     fields = line.split('\t')
     read_name = fields[0]
@@ -299,7 +299,7 @@ def map_read_to_junct_region(read_start_pos, read_len_list, points,read_name):
 # @profile
 def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict, 
              start_pos_list, start_gname_list, end_pos_list, end_gname_list,
-             READ_LEN, READ_JUNC_MIN_MAP_LEN, CHR_LIST,parsed_line):
+             READ_JUNC_MIN_MAP_LEN, CHR_LIST,parsed_line):
     # mapping = {}
     [read_name, read_start_pos, rname, read_len_list] = parsed_line
     tolerance = 20

@@ -1,17 +1,7 @@
 from operator import ge
 from parse_annotation import parse_annotation
 from collections import defaultdict
-def check_region_type(region_name):
-    if ((region_name.count(':') == 1) and ('-' not in region_name)):
-        return 'one_exon'
-    elif ((region_name.count(':') == 2) and ('-' not in region_name)):
-        return 'two_exons'
-    elif (region_name.count('-') == 1):
-        return 'one_junction'
-    elif ((region_name.count(':') > 2) and ('-' not in region_name)):
-        return 'exons'
-    else:
-        return 'junctions'
+from util import check_region_type
 def calculate_exon_min_read_mapped_length(exon_region_name,point_dict,exon_position):
     assert '-' not in exon_region_name
     points = exon_region_name.split(':')
@@ -158,13 +148,15 @@ def filter_long_read_regions(gene_regions_dict,genes_regions_len_dict):
                         
 
 
-def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection='read_length'):
+def parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN,sr_region_selection='real_data'):
     [gene_exons_dict, gene_points_dict, gene_isoforms_dict, genes_regions_len_dict,
-        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict] = parse_annotation(ref_file_path, threads,READ_LEN, READ_JUNC_MIN_MAP_LEN)
+        _, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict] = parse_annotation(ref_file_path, threads)
     if sr_region_selection == 'read_length':
         SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_read_length(gene_regions_dict,gene_points_dict,genes_regions_len_dict,READ_JUNC_MIN_MAP_LEN,READ_LEN,READ_LEN)
+        SR_genes_regions_len_dict = genes_regions_len_dict
     elif sr_region_selection == 'num_exons':
         SR_gene_regions_dict,SR_genes_regions_len_dict = filter_regions_num_exons(gene_regions_dict,genes_regions_len_dict)
+        SR_genes_regions_len_dict = genes_regions_len_dict
     elif sr_region_selection == 'real_data':
         SR_gene_regions_dict,SR_genes_regions_len_dict = gene_regions_dict,genes_regions_len_dict
     LR_gene_regions_dict,LR_genes_regions_len_dict = gene_regions_dict,genes_regions_len_dict

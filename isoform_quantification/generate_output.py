@@ -2,35 +2,38 @@ from pathlib import Path
 import numpy as np
 import dill as pickle
 import io
-def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict):
+from util import output_matrix_info
+import config
+def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict] = info_dict_list
-    out_dict = short_read_gene_matrix_dict.copy()
-    bio = io.BytesIO()
-    for chr in out_dict:
-        for gene in out_dict[chr]:
-            bio.write(str.encode('{}\n'.format(gene)))
-            np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    # out_dict = short_read_gene_matrix_dict.copy()
+    # bio = io.BytesIO()
+    # for chr in out_dict:
+    #     for gene in out_dict[chr]:
+    #         bio.write(str.encode('{}\n'.format(gene)))
+    #         np.savetxt(bio, out_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    mystr = bio.getvalue().decode('latin1')
-    with open(output_path+'/sr_A.out','w') as f:
-        f.write(mystr)
-    bio = io.BytesIO()
-    for chr in long_read_gene_matrix_dict:
-        for gene in long_read_gene_matrix_dict[chr]:
-            bio.write(str.encode('{}\n'.format(gene)))
-            np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
+    # mystr = bio.getvalue().decode('latin1')
+    # with open(output_path+'/sr_A.out','w') as f:
+    #     f.write(mystr)
+    # bio = io.BytesIO()
+    # for chr in long_read_gene_matrix_dict:
+    #     for gene in long_read_gene_matrix_dict[chr]:
+    #         bio.write(str.encode('{}\n'.format(gene)))
+    #         np.savetxt(bio, long_read_gene_matrix_dict[chr][gene]['isoform_region_matrix'],fmt='%.d',delimiter=',')
     
-    mystr = bio.getvalue().decode('latin1')
-    with open(output_path+'/lr_A.out','w') as f:
-        f.write(mystr)
+    # mystr = bio.getvalue().decode('latin1')
+    # with open(output_path+'/lr_A.out','w') as f:
+    #     f.write(mystr)
     list_of_all_genes_chrs = []
     for chr_name in long_read_gene_matrix_dict:
         if chr_name in short_read_gene_matrix_dict:
             for gene_name in long_read_gene_matrix_dict[chr_name]:
                 if gene_name in short_read_gene_matrix_dict[chr_name]:
                     list_of_all_genes_chrs.append((gene_name,chr_name))
-    
+    if config.output_matrix_info:
+        output_matrix_info(short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_points_dict,output_path)
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tSR_A_dim\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\tLR_A_dim\n')
         for (gene_name,chr_name) in list_of_all_genes_chrs:
@@ -69,8 +72,10 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
                     SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = 'NA','NA','NA','NA'
                     LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = 'NA','NA','NA','NA'
                     f.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,num_exons,isoform_length,num_isoforms,SR_singular_value_product,SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_singular_value_product,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
-def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict):
+def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict):
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    if config.output_matrix_info:
+        output_matrix_info(short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_points_dict,output_path)
     # with open(output_path+'lr.pkl','wb') as f:
     #     pickle.dump(long_read_gene_matrix_dict,f)
     with open(output_path+"/expression_gene.out",'w') as f_gene:

@@ -125,8 +125,6 @@ def estimate_isoform_expression_single_gene(args):
         isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
         isoform_num_exons[isoform_names_indics[isoform_name]] = long_read_gene_matrix_dict['num_exons'][isoform_name]
     num_isoforms = SR_isoform_region_matrix.shape[1]
-    if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
-        return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),1.0
     if (beta == 'adaptive'):
         # beta_selections = [10**(-i) for i in range(1,10)]
         selected_beta = 1e-6
@@ -139,6 +137,8 @@ def estimate_isoform_expression_single_gene(args):
         gene_alpha = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,isoform_num_exons,model)
     else:
         gene_alpha = alpha
+    if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
+        return np.zeros(num_isoforms),np.zeros(num_isoforms),np.zeros(num_isoforms),gene_alpha
     # for params in params_grid:
     params = {'alpha':gene_alpha,'beta':selected_beta}
     isoform_expression = estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,SR_quantification_option,params)

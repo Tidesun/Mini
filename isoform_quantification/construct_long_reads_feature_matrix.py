@@ -78,7 +78,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
                 region_isoform_dict[region] = gene_regions_dict[chr_name][gene_name][region]
             # region_isoform_dict = gene_regions_dict[chr_name][gene_name]
 
-            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,False)
+            matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,config.normalize_lr_A)
             if config.add_full_length_region == 'nonfullrank':
                 region_isoform_dict = {}
                 for region in gene_regions_read_count[chr_name][gene_name].copy():
@@ -93,7 +93,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
                             del gene_regions_read_count[chr_name][gene_name][region]
                             continue
                     region_isoform_dict[region] = gene_regions_dict[chr_name][gene_name][region]
-                matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,False)
+                matrix_dict = calculate_condition_number(region_isoform_dict,isoform_names,config.normalize_lr_A)
             region_read_count_dict = gene_regions_read_count[chr_name][gene_name]
             region_len_dict = gene_region_len_dict[chr_name][gene_name]
             region_read_length = gene_regions_read_length[chr_name][gene_name]
@@ -124,8 +124,8 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             try:
                 matrix_dict['condition_number']  = get_condition_number(matrix_dict['isoform_region_matrix'])
             except:
-                with open('/fs/project/PCON0009/Au-scratch2/haoran/TrEESR/test.pkl','wb') as f:
-                    pickle.dump([matrix_dict['isoform_region_matrix'], gene_regions_dict[chr_name][gene_name],gene_regions_read_count[chr_name][gene_name],chr_name,gene_name],f)
+                # with open('/fs/project/PCON0009/Au-scratch2/haoran/TrEESR/test.pkl','wb') as f:
+                #     pickle.dump([matrix_dict['isoform_region_matrix'], gene_regions_dict[chr_name][gene_name],gene_regions_read_count[chr_name][gene_name],chr_name,gene_name],f)
                 raise Exception
             gene_matrix_dict[chr_name][gene_name] = matrix_dict
 
