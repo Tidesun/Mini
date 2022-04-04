@@ -158,8 +158,8 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     # import dill as pickle
     # rep_name = output_path.split('/')[-2]
     # # rep_name = 1
-    # with open(f'{output_path}/dict.pkl','wb') as f:
-    #     pickle.dump([long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict],f)
+    with open(f'{output_path}/dict.pkl','wb') as f:
+        pickle.dump([long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict],f)
     print('Generating output...',flush=True)
     if training:
         generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path)
