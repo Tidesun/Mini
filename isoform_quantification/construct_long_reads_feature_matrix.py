@@ -40,7 +40,7 @@ def construct_region_abundance_matrix_long_read(region_read_length,region_read_c
 def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,gene_regions_read_count,gene_regions_read_length,gene_region_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,num_LRs,total_long_read_length,READ_JUNC_MIN_MAP_LEN,output_dir,threads,normalize_A=True):
     # with open('/users/PCON0009/haoranli/_projects/complex_profile_quant/weight_dict.pkl','rb') as f:
     #     long_reads_isoform_region_weight_matrix_dict = pickle.load(f)
-    with open('/fs/ess/scratch/PCON0009/haoran/weight_calculation/weight_dict.pkl','rb') as f:
+    with open(config.region_weight_path,'rb') as f:
         long_reads_isoform_region_weight_matrix_dict = pickle.load(f)
             
     # long_reads_isoform_region_weight_matrix_dict = cal_isoform_region_weight(gene_regions_dict,gene_region_len_dict,gene_isoforms_length_dict,READ_JUNC_MIN_MAP_LEN,output_dir,threads)

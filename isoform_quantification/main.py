@@ -1,8 +1,8 @@
 import argparse
-from ast import Str
 from TrEESR import TrEESR
 from TransELS import TransELS
 import config
+import os
 # import os
 # os.system("taskset -p 0xfffff %d" % os.getpid())
 # affinity_mask = os.sched_getaffinity(0)
@@ -34,6 +34,9 @@ def parse_arguments():
     optional_TrEESR.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
     optional_TrEESR.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
     optional_TrEESR.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
+    weight_path = os.path.dirname(os.path.realpath(__file__))+'/weights/nanosim_weight_dict.pkl'
+    assert os.path.exists(weight_path)
+    optional_TrEESR.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -54,7 +57,7 @@ def parse_arguments():
     optional_TransELS.add_argument('--multi_mapping_filtering',type=str,default='best', help="How to filter multi-mapping reads[default:best][unique_only,best]")
     optional_TransELS.add_argument('--training',type=str,default='False', help="Generate training dict")
     optional_TransELS.add_argument('--DL_model',type=str,default=None,help='DL model to use')
-    optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:manual_assign]')
+    optional_TransELS.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:linear_model]')
     optional_TransELS.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_TransELS.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TransELS.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
@@ -62,10 +65,11 @@ def parse_arguments():
     optional_TransELS.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
     optional_TransELS.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
     optional_TransELS.add_argument('--multi_exon_region_weight',type=str, default='regular',help="The weight in matrix A for multi_exon_region[default:regular][regular,minus_inner_region]")
-    optional_TransELS.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix inof [default:False] [True,False]")
+    optional_TransELS.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix info [default:False] [True,False]")
     optional_TransELS.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
     optional_TransELS.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_TransELS.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
+    optional_TransELS.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
@@ -75,6 +79,7 @@ def parse_arguments():
     config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
     config.multi_exon_region_weight = args.multi_exon_region_weight
     config.sr_region_selection = args.sr_region_selection
+    config.region_weight_path = args.region_weight_path
     if args.output_matrix_info == 'True':
         config.output_matrix_info = True
     else:

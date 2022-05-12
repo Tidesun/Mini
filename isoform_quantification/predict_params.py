@@ -67,12 +67,13 @@ class AbNET(nn.Module):
 def get_generalized_condition_number(A):
     cpu_A = A.cpu()
     _,s,_ = torch.linalg.svd(cpu_A)
-    return s[0]/s[s>0][-1]
-
-def get_generalized_condition_number(A):
-    cpu_A = A.cpu()
-    _,s,_ = torch.linalg.svd(cpu_A)
-    return s[0]/s[s>0][-1]
+    try:
+        res = s[0]/s[s>0][-1]
+    except Exception as e:
+        print(cpu_A)
+        print(e)
+        return torch.Tensor([1])[0]
+    return res
 def get_features(all_variable_features,all_fixed_features,all_matrics):
     packed = pack_sequence(all_variable_features,enforce_sorted=False).to(device)
     seq_unpacked, lens_unpacked = pad_packed_sequence(packed, batch_first=True)
@@ -126,7 +127,8 @@ def predict_params(sr_A,sr_b,lr_A,lr_b,isoform_lengths,isoform_num_exons,model):
 def load_model(model_path):
     rnn = AbNET(2,64,32,2,1).to(device)
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    checkpoint = torch.load("{}/models/{}".format(dir_path,model_path),map_location='cpu')
+    checkpoint = torch.load(model_path,map_location='cpu')
+    # checkpoint = torch.load("{}/models/{}".format(dir_path,model_path),map_location='cpu')
     rnn.load_state_dict(checkpoint['model_state_dict'])
     rnn.eval()
     return rnn
