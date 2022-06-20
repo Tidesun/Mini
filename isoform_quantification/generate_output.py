@@ -80,40 +80,40 @@ def generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_g
     #     pickle.dump(long_read_gene_matrix_dict,f)
     with open(output_path+"/expression_gene.out",'w') as f_gene:
         with open(output_path+"/expression_isoform.out",'w') as f_isoform:
-            f_gene.write('Gene\tChr\tTPM\tSR_expected_counts\tLR_expected_counts\n')
-            f_isoform.write('Isoform\tGene\tChr\tStart\tEnd\tIsoform_length\tTPM\tSR_expected_counts\tLR_expected_counts\tAlpha\n')
+            f_gene.write('Gene\tChr\tTPM\n')
+            f_isoform.write('Isoform\tGene\tChr\tStart\tEnd\tIsoform_length\tTPM\tAlpha\n')
             # f_isoform.write('Isoform\tGene\tChr\tStart\tEnd\tIsoform_length\tTPM\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\n')
             for gene_name,chr_name in list_of_all_genes_chrs:
                 tpm_sum = 0
-                sr_expected_counts_sum = 0
-                lr_expected_counts_sum = 0
+                # sr_expected_counts_sum = 0
+                # lr_expected_counts_sum = 0
                 for isoform_name in short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']:
                     start_pos = min(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'])
                     end_pos = max(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['end_pos'])
                     isoform_len = gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
                     isoform_index = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics'][isoform_name]
                     tpm = gene_isoform_tpm_expression_dict[chr_name][gene_name]['tpm'][isoform_index]
-                    sr_expected_counts = gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_expected_counts'][isoform_index]
-                    lr_expected_counts = gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_expected_counts'][isoform_index]
+                    # sr_expected_counts = gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_expected_counts'][isoform_index]
+                    # lr_expected_counts = gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_expected_counts'][isoform_index]
                     alpha = gene_isoform_tpm_expression_dict[chr_name][gene_name]['alpha']
                     tpm_sum += tpm
-                    sr_expected_counts_sum += sr_expected_counts
-                    lr_expected_counts_sum += lr_expected_counts
-                    if chr_name in same_structure_isoform_dict:
-                        if gene_name in same_structure_isoform_dict[chr_name]:
-                            if isoform_name in same_structure_isoform_dict[chr_name][gene_name]:
-                                num_same_structure_isoforms = len(same_structure_isoform_dict[chr_name][gene_name][isoform_name])
-                                tpm = tpm/(num_same_structure_isoforms+1)
-                                sr_expected_counts = sr_expected_counts/(num_same_structure_isoforms+1)
-                                lr_expected_counts = lr_expected_counts/(num_same_structure_isoforms+1)
-                                for same_structure_isoform in same_structure_isoform_dict[chr_name][gene_name][isoform_name]:
-                                    f_isoform.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(same_structure_isoform,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,sr_expected_counts,lr_expected_counts,alpha))
-                    f_isoform.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,sr_expected_counts,lr_expected_counts,alpha))
+                    # sr_expected_counts_sum += sr_expected_counts
+                    # lr_expected_counts_sum += lr_expected_counts
+                    # if chr_name in same_structure_isoform_dict:
+                    #     if gene_name in same_structure_isoform_dict[chr_name]:
+                    #         if isoform_name in same_structure_isoform_dict[chr_name][gene_name]:
+                    #             num_same_structure_isoforms = len(same_structure_isoform_dict[chr_name][gene_name][isoform_name])
+                    #             tpm = tpm/(num_same_structure_isoforms+1)
+                                # sr_expected_counts = sr_expected_counts/(num_same_structure_isoforms+1)
+                                # lr_expected_counts = lr_expected_counts/(num_same_structure_isoforms+1)
+                                # for same_structure_isoform in same_structure_isoform_dict[chr_name][gene_name][isoform_name]:
+                                #     f_isoform.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(same_structure_isoform,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,sr_expected_counts,lr_expected_counts,alpha))
+                    f_isoform.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(isoform_name,gene_name,chr_name,start_pos,end_pos,isoform_len,tpm,alpha))
                     # SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
                     # LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
 
                     # f_isoform.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number))
-                f_gene.write('{}\t{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,tpm_sum,sr_expected_counts_sum,lr_expected_counts_sum))
+                f_gene.write('{}\t{}\t{}\n'.format(gene_name,chr_name,tpm_sum))
                 
             # censored gene output  
             for chr_name in removed_gene_isoform_dict:

@@ -131,4 +131,5 @@ def load_model(model_path):
     # checkpoint = torch.load("{}/models/{}".format(dir_path,model_path),map_location='cpu')
     rnn.load_state_dict(checkpoint['model_state_dict'])
     rnn.eval()
+    # rnn.train(True)
     return rnn

@@ -164,8 +164,8 @@ def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_fi
     if training:
         generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path)
     generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict)
-    try:
-        shutil.rmtree(f'{output_path}/temp/')
-    except:
-        pass
+    # try:
+    #     shutil.rmtree(f'{output_path}/temp/')
+    # except:
+    #     pass
     print('Done in %.3f s'%(end_time-start_time),flush=True)

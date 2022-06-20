@@ -2,6 +2,7 @@ weights/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 isoform_quantification/external_bin
+isoform_quantification/models
 *.py[cod]
 *$py.class
 **/.vscode/

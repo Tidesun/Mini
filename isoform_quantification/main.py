@@ -51,6 +51,7 @@ def parse_arguments():
 
     optional_TransELS.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
     optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
+    optional_TransELS.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_TransELS.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -101,6 +102,7 @@ def parse_arguments():
     else:
         config.use_weight_matrix = False
     config.add_full_length_region = args.add_full_length_region
+    config.kallisto_index = args.kallisto_index
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
