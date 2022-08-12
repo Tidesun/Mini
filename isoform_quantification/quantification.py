@@ -2,9 +2,9 @@ from collections import defaultdict
 import numpy as np
 from numpy import linalg as LA
 from qpsolvers import solve_qp
-from predict_params import load_model,predict_params
+from predict_params import predict_params_all_genes
 import config
-from tqdm import tqdm
+# from tqdm import tqdm
 def normalize_expression(gene_isoform_expression_dict):
     gene_isoform_tpm_expression_dict = defaultdict(lambda: defaultdict(dict))
     # SR_isoform_expression_sum = 0
@@ -107,6 +107,7 @@ def assign_reads(isoform_expression,A,b):
     corrected_isoform_expression = unique_isoform_expression + multiple_isoform_expression
     return corrected_isoform_expression
 def estimate_isoform_expression_single_gene(args):
+    
     short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option,gene = args
     SR_isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix']
     SR_region_read_count_matrix = short_read_gene_matrix_dict['region_abund_matrix']
@@ -125,22 +126,15 @@ def estimate_isoform_expression_single_gene(args):
         isoform_lengths[isoform_names_indics[isoform_name]] = gene_isoforms_length_dict[isoform_name]
         isoform_num_exons[isoform_names_indics[isoform_name]] = long_read_gene_matrix_dict['num_exons'][isoform_name]
     num_isoforms = SR_isoform_region_matrix.shape[1]
+    if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
+        return np.zeros(num_isoforms),1.0
     if (beta == 'adaptive'):
         # beta_selections = [10**(-i) for i in range(1,10)]
         selected_beta = 1e-6
     else:
         selected_beta = beta
-    if (alpha == 'adaptive'):
-        # if gene == 'ENSG00000280987.4':
-        #     with open('temp.pkl','wb') as f:
-        #         pickle.dump([SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix],f)
-        gene_alpha = predict_params(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,isoform_num_exons,model)
-    else:
-        gene_alpha = alpha
-    if ((SR_region_read_count_matrix<=0).all() and (LR_region_read_count_matrix<=0).all()):
-        return np.zeros(num_isoforms),gene_alpha
-    # for params in params_grid:
-    params = {'alpha':gene_alpha,'beta':selected_beta}
+    # use alpha = 1.0 for Mili + other SR methods for linear model
+    params = {'alpha':1.0,'beta':selected_beta}
     isoform_expression = estimate_isoform_expression_grid_search_iteration(SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix,isoform_lengths,P,assign_unique_mapping_option,SR_quantification_option,params)
     if isoform_expression.sum() != 0:
         isoform_expression = isoform_expression/isoform_expression.sum()
@@ -155,12 +149,23 @@ def estimate_isoform_expression_single_gene(args):
         # SR_expected_counts = assign_reads(isoform_expression,SR_isoform_region_matrix,SR_region_read_count_matrix * SR_region_eff_length_matrix)
         # SR_isoform_expression = SR_expected_counts / isoform_lengths
         LR_isoform_expression = assign_reads(isoform_expression,LR_isoform_region_matrix,LR_region_read_count_matrix)
-    return LR_isoform_expression,gene_alpha
+    prediction_params = None
+    if (alpha == 'adaptive'):
+        # if gene == 'ENSG00000280987.4':
+        #     with open('temp.pkl','wb') as f:
+        #         pickle.dump([SR_isoform_region_matrix,SR_region_read_count_matrix,LR_isoform_region_matrix,LR_region_read_count_matrix],f)
+        prediction_params = (SR_isoform_region_matrix,SR_region_read_count_matrix,\
+            LR_isoform_region_matrix,LR_region_read_count_matrix,\
+                isoform_lengths,isoform_num_exons,model)
+
+    # for params in params_grid:
+
+    return LR_isoform_expression,prediction_params
 def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,DL_model,alpha,beta,P,assign_unique_mapping_option):
     print('Calculating the isoform expression...',flush=True)
     gene_isoform_expression_dict = defaultdict(lambda:defaultdict(dict))
     if (alpha == 'adaptive'):
-        model = load_model(DL_model)
+        model = DL_model
     else:
         model = None
     print(f'Using alpha = {alpha}',flush=True)
@@ -171,22 +176,30 @@ def quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_i
                 if gene_name in short_read_gene_matrix_dict[chr_name]:
                     list_of_all_genes_chrs.append((gene_name,chr_name))
     list_of_args = [(short_read_gene_matrix_dict[chr_name][gene_name],long_read_gene_matrix_dict[chr_name][gene_name],gene_isoforms_length_dict[chr_name][gene_name],alpha,beta,P,model,assign_unique_mapping_option,SR_quantification_option,gene_name) for gene_name,chr_name in list_of_all_genes_chrs]
-    for (gene_name,chr_name), args in tqdm(zip(list_of_all_genes_chrs, list_of_args)):
+    print('Solving by linear model...',flush=True)
+    list_of_prediction_params = []
+    for (gene_name,chr_name), args in zip(list_of_all_genes_chrs, list_of_args):
         # try:
         result = estimate_isoform_expression_single_gene(args)
-        if SR_quantification_option == 'Mili':
-            gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],\
-                gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts'],\
-                    gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],\
-                        gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = result
-        else:
-            gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'] = SR_gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression']
+        # if SR_quantification_option == 'Mili':
+        #     gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],\
+        #         gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts'],\
+        #             gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],\
+        #                 gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = result
+        # else:
+        gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'] = SR_gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression']
             # gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],\
             #     gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts'] = \
             #         SR_gene_isoform_expression_dict[chr_name][gene_name]['SR_isoform_expression'],\
             #         SR_gene_isoform_expression_dict[chr_name][gene_name]['SR_expected_counts']
-            gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = result
-        # except Exception as e:
-        #     print(e)
+        gene_isoform_expression_dict[chr_name][gene_name]['LR_isoform_expression'],prediction_params = result
+        list_of_prediction_params.append((gene_name,chr_name,prediction_params))
+    print('Done',flush=True)
+    print('Predicting alpha by deep learning model...',flush=True)
+    list_of_gene_alpha = predict_params_all_genes(list_of_prediction_params)
+    for (gene_name,chr_name, alpha) in list_of_gene_alpha:
+        gene_isoform_expression_dict[chr_name][gene_name]['alpha'] = alpha
+    print('Done',flush=True)
+
     gene_isoform_tpm_expression_dict = normalize_expression(gene_isoform_expression_dict)
     return gene_isoform_tpm_expression_dict,list_of_all_genes_chrs

@@ -1,18 +1,16 @@
 from collections import defaultdict
 import pysam
-import pandas as pd
 import time
-import dill as pickle
-import shutil
+import gc
 from pathlib import Path
-from util import get_long_read_M_dist, get_filtered_out_long_read_M_dist, get_very_short_isoforms
 from construct_feature_matrix import generate_all_feature_matrix_short_read
 from construct_long_reads_feature_matrix import generate_all_feature_matrix_long_read
 from parse_annotation_main import parse_reference_annotation, process_annotation_for_alignment
 from parse_alignment_main import parse_alignment
-from generate_output import generate_TransELS_output
-from quantification import quantification
-from SR_external_quantification import SR_external_quantification
+from EM_libraries.EM_algo import EM_algo_main
+from EM_theta_iterative_libraries.EM_algo import EM_algo_theta_iter_main
+from EM_kde_libraries.EM_algo import EM_algo_kde_main
+from EM_kde_score_libraries.EM_algo import EM_algo_kde_score_main
 import config
 def infer_read_len(short_read_alignment_file_path):
     READ_LEN = 150
@@ -103,69 +101,72 @@ def get_info_dict_list(gene_isoforms_dict,gene_exons_dict,raw_gene_exons_dict,ra
                 num_isoforms_dict[isoform_name] =  len(raw_isoform_exons_dict[chr_name][gene_name])
     info_dict_list = [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict]
     return info_dict_list
-def generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path):
-    training_dict = {}
-    for gene_name,chr_name in list_of_all_genes_chrs:
-        if chr_name not in training_dict:
-            training_dict[chr_name] = {}
-        single_dict = {}
-        single_dict['sr_A'] = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix']
-        single_dict['sr_b'] = short_read_gene_matrix_dict[chr_name][gene_name]['region_abund_matrix']
-        single_dict['lr_A'] = long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix']
-        single_dict['lr_b'] = long_read_gene_matrix_dict[chr_name][gene_name]['region_abund_matrix']
-        single_dict['SR_tpm'] = gene_isoform_tpm_expression_dict[chr_name][gene_name]['SR_tpm']
-        single_dict['LR_tpm'] = gene_isoform_tpm_expression_dict[chr_name][gene_name]['LR_tpm']
-        single_dict['isoform_names_indics'] = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_names_indics']
-        training_dict[chr_name][gene_name] = single_dict
-    with open(f'{output_path}/training.pkl','wb') as f:
-        pickle.dump(training_dict,f)
-    print('DONE')
-def TransELS(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15):
+import re
+def parse_for_EM_algo(annotation):
+    gene_exon_dict = {}
+    gene_isoform_dict = {}
+    isoform_exon_dict = {}
+    strand_dict = {}
+    with open(annotation,'r') as f:
+        for line in f:
+            if line.lstrip()[0] == "#":
+                continue
+            fields = line.split('\t')
+            if (fields[2] != 'exon'):
+                continue
+            strand = fields[6]
+            chr_name = fields[0]
+            gene_name = re.findall('gene_id "([^"]*)"', fields[8])[0]
+            isoform_name = re.findall('transcript_id "([^"]*)"', fields[8])[0]
+            start_pos = int(fields[3])
+            end_pos = int(fields[4])
+            if gene_name not in gene_exon_dict:
+                gene_exon_dict[gene_name] = []
+                gene_isoform_dict[gene_name] = set()
+            if isoform_name not in isoform_exon_dict:
+                isoform_exon_dict[isoform_name] = []
+            gene_exon_dict[gene_name].append([start_pos,end_pos])
+            gene_isoform_dict[gene_name].add(isoform_name)
+            isoform_exon_dict[isoform_name].append([start_pos,end_pos])
+            strand_dict[gene_name] = strand
+    for isoform in isoform_exon_dict:
+        isoform_exon_dict[isoform] = sorted(isoform_exon_dict[isoform],key=lambda x:(x[0],x[1]))
+    isoform_len_dict = {}
+    for isoform in isoform_exon_dict:
+        isoform_len_dict[isoform] = 0
+        for exon in isoform_exon_dict[isoform]:
+            isoform_len_dict[isoform] += exon[1] - exon[0] + 1
+#     isoform_len_set = set(isoform_len_dict.values())
+    return isoform_len_dict,isoform_exon_dict,strand_dict
+def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
     print(alpha)
     Path(output_path).mkdir(parents=True, exist_ok=True)
     print('Preprocessing...',flush=True)
     _,gene_points_dict,gene_isoforms_dict,\
-        SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,\
+        _,_,LR_gene_regions_dict,LR_genes_regions_len_dict,\
             gene_isoforms_length_dict,raw_isoform_exons_dict,_,\
-                same_structure_isoform_dict,removed_gene_isoform_dict,gene_range,gene_interval_tree_dict = \
+                _,_,gene_range,gene_interval_tree_dict = \
                     parse(ref_file_path,READ_JUNC_MIN_MAP_LEN,short_read_alignment_file_path,threads)
-    short_read_gene_matrix_dict,SR_read_len = map_short_reads(short_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,gene_isoforms_length_dict,output_path,multi_mapping_filtering,threads)
-    long_read_gene_matrix_dict,gene_regions_read_pos,long_read_gene_regions_read_length = map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict)
-    
-
-    # get_very_short_isoforms(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict,isoform_length_dict)
-    # generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list)
-    # unique_dist_df.to_csv('{}/lr_M_unique_dist.tsv'.format(output_path),sep='\t',index=False)
-    # multi_dist_df.to_csv('{}/lr_M_multi_dist.tsv'.format(output_path),sep='\t',index=False)
-    # filtered_unique_dist_df.to_csv('{}/filtered_out_lr_M_unique_dist.tsv'.format(output_path),sep='\t',index=False)
-    # filtered_multi_dist_df.to_csv('{}/filtered_out_lr_M_multi_dist.tsv'.format(output_path),sep='\t',index=False)
-    # with open('{}/lr.pkl'.format(output_path),'wb') as f:
-    #     pickle.dump((gene_isoforms_length_dict,long_read_gene_regions_read_length,long_read_gene_regions_read_count,LR_gene_regions_dict,filtered_gene_regions_read_length),f)
-    
-    # info_dict_list = get_info_dict_list(gene_isoforms_dict,gene_exons_dict,raw_gene_exons_dict,raw_isoform_exons_dict,gene_isoforms_length_dict)
+    _,gene_regions_read_pos,_ = map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict)
+    isoform_len_dict,isoform_exon_dict,strand_dict = parse_for_EM_algo(ref_file_path)
+    del gene_points_dict
+    del gene_isoforms_dict
+    del LR_genes_regions_len_dict
+    del gene_isoforms_length_dict
+    del raw_isoform_exons_dict
+    del gene_range
+    del gene_interval_tree_dict
+    gc.collect()
     print('Start quantification...',flush=True)
     start_time = time.time()
-    SR_gene_isoform_expression_dict = None
-    if SR_quantification_option != 'Mili':
-        if short_read_alignment_file_path is not None:
-            ref_genome = reference_genome
-            SR_gene_isoform_expression_dict = SR_external_quantification(short_read_gene_matrix_dict,gene_isoforms_length_dict,SR_quantification_option,SR_fastq_list,SR_read_len,ref_file_path,ref_genome,output_path,threads)
-    # import dill as pickle
-    # pickle.dump((long_read_gene_matrix_dict,gene_regions_read_pos,long_read_gene_regions_read_length,gene_points_dict,LR_gene_regions_dict,LR_genes_regions_len_dict),open(f'{output_path}/dict.pkl','wb'))
-    gene_isoform_tpm_expression_dict,list_of_all_genes_chrs = quantification(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoforms_length_dict,SR_gene_isoform_expression_dict,SR_quantification_option,DL_model,alpha,beta,P,assign_unique_mapping_option)
+    if EM_choice == 'kde':
+        EM_algo_kde_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
+    elif EM_choice == 'kde_score':
+        EM_algo_kde_score_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
+    else:
+        if iter_theta == 'True':
+            EM_algo_theta_iter_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
+        else:
+            EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
     end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
-    # import dill as pickle
-    # rep_name = output_path.split('/')[-2]
-    # # rep_name = 1
-    # with open(f'{output_path}/dict.pkl','wb') as f:
-    #     pickle.dump([long_read_gene_matrix_dict,gene_points_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict],f)
-    print('Generating output...',flush=True)
-    if training:
-        generate_training_dict(list_of_all_genes_chrs,short_read_gene_matrix_dict,long_read_gene_matrix_dict,gene_isoform_tpm_expression_dict,output_path)
-    generate_TransELS_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_isoform_tpm_expression_dict,raw_isoform_exons_dict,gene_isoforms_length_dict,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict)
-    # try:
-    #     shutil.rmtree(f'{output_path}/temp/')
-    # except:
-    #     pass
     print('Done in %.3f s'%(end_time-start_time),flush=True)

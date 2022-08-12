@@ -29,9 +29,10 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,t
     with open(alignment_file_path, 'r') as aln_file:
         local_gene_regions_read_count = {}
         local_gene_regions_read_length = {}
+        local_gene_regions_read_pos = {}
         aln_file.seek(start_file_pos)
         line_num_ct = 0
-        max_buffer_size = 1e2
+        max_buffer_size = 1e1
         buffer_size = 0
         for line in aln_file:
             line_num_ct += 1
@@ -52,26 +53,31 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,t
                         rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
                         if rname not in local_gene_regions_read_count:
                             local_gene_regions_read_count[rname],local_gene_regions_read_length[rname] = {},{}
+                            local_gene_regions_read_pos[rname] = {}
                         if gname not in local_gene_regions_read_count[rname]:
                             local_gene_regions_read_count[rname][gname],local_gene_regions_read_length[rname][gname] = {},{}
+                            local_gene_regions_read_pos[rname][gname] = {}
                         if region_name not in local_gene_regions_read_count[rname][gname]:
                             local_gene_regions_read_count[rname][gname][region_name],local_gene_regions_read_length[rname][gname][region_name] = 0,[]
+                            local_gene_regions_read_pos[rname][gname][region_name] = []
                         local_gene_regions_read_count[rname][gname][region_name] += 1 
                         # if long_read:
                         local_gene_regions_read_length[rname][gname][region_name].append(mapping['read_length'])
+                        local_gene_regions_read_pos[rname][gname][region_name].append(mapping)
                     buffer_size += 1
             except Exception as e:
                 tb = traceback.format_exc()
                 print(Exception('Failed to on ' + line, tb))
                 continue
             if buffer_size > max_buffer_size:
-                temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length))
+                temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos))
                 local_gene_regions_read_count,local_gene_regions_read_length = {},{}
+                local_gene_regions_read_pos = {}
                 buffer_size = 0
         if buffer_size > 0:
-            temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length))
+            temp_queue.put((local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos))
     return 
-def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length):
+def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length,gene_regions_read_pos):
     num_mapped_lines = 0
     num_lines = 0
     while True:
@@ -79,13 +85,14 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
         if msg == 'kill':
             break
         else:
-            local_gene_regions_read_count,local_gene_regions_read_length = msg
+            local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos = msg
             for rname in local_gene_regions_read_count:
                 for gname in local_gene_regions_read_count[rname]:
                     for region in local_gene_regions_read_count[rname][gname]:
                         num_mapped_lines += local_gene_regions_read_count[rname][gname][region]
                         gene_regions_read_count[rname][gname][region] += local_gene_regions_read_count[rname][gname][region]
                         gene_regions_read_length[rname][gname][region] += local_gene_regions_read_length[rname][gname][region]
+                        gene_regions_read_pos[rname][gname][region] += local_gene_regions_read_pos[rname][gname][region]
 
             # for mapping in local_all_mappings:
             #     num_lines += 1
@@ -100,7 +107,7 @@ def mapping_listener(temp_queue,gene_regions_read_count,gene_regions_read_length
             #                 gene_regions_read_length[rname][gname][region_name].append(mapping['read_length'])
             #         read_lens.append(mapping['read_length'])
             #         read_names.update(local_read_names)
-    return gene_regions_read_count,gene_regions_read_length,num_mapped_lines
+    return gene_regions_read_count,gene_regions_read_length,num_mapped_lines,gene_regions_read_pos
 
 # @profile
 def get_aln_line_marker(alignment_file_path,threads):
@@ -126,12 +133,15 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
     manager = mp.Manager()
     gene_regions_read_count = {}
     gene_regions_read_length ={}
+    gene_regions_read_pos = {}
     global filtered_gene_regions_dict
     filtered_gene_regions_dict = defaultdict(lambda: defaultdict(dict))
     for rname in gene_regions_dict:
+        gene_regions_read_pos[rname] = {}
         gene_regions_read_count[rname],gene_regions_read_length[rname] = {},{}
         for gname in gene_regions_dict[rname]:
             gene_regions_read_count[rname][gname],gene_regions_read_length[rname][gname] = {},{}
+            gene_regions_read_pos[rname][gname] = {}
             # if (not long_read):
             #     per_gene_regions_dict = filter_regions(gene_regions_dict[rname][gname],long_read=False)
             # else:
@@ -140,6 +150,7 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
             for region in per_gene_regions_dict:
                 gene_regions_read_count[rname][gname][region] = 0
                 gene_regions_read_length[rname][gname][region] = []
+                gene_regions_read_pos[rname][gname][region] = []
                 filtered_gene_regions_dict[rname][gname][region] = True
     if alignment_file_path == None:
         return gene_regions_read_count,150,0
@@ -163,7 +174,7 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
     pool = mp.Pool(threads+1)
     # partial_read_alignment = partial(parse_alignment_iteration,alignment_file_path)
     temp_queue = manager.Queue()    
-    watcher = pool.apply_async(mapping_listener, args=(temp_queue,gene_regions_read_count,gene_regions_read_length))
+    watcher = pool.apply_async(mapping_listener, args=(temp_queue,gene_regions_read_count,gene_regions_read_length,gene_regions_read_pos))
     partial_read_alignment = partial(parse_alignment_iteration,alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,temp_queue,long_read)
     futures = []
     aln_line_marker = get_aln_line_marker(alignment_file_path,threads)
@@ -175,7 +186,7 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
     for future in futures:
         future.get()
     temp_queue.put('kill')
-    gene_regions_read_count,gene_regions_read_length,num_mapped_lines = watcher.get()
+    gene_regions_read_count,gene_regions_read_length,num_mapped_lines,gene_regions_read_pos = watcher.get()
     pool.close()
     pool.join()
     read_lens = []
@@ -308,7 +319,7 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
                         if region not in gene_full_length_region_dict[rname][gname]:
                             del gene_regions_read_length[rname][gname][region]
                             del gene_regions_read_count[rname][gname][region]
-        return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length
+        return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads,filtered_gene_regions_read_length,gene_regions_read_pos
     else:
         all_read_len = []
         for rname in gene_regions_read_count.copy():

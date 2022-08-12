@@ -9,3 +9,4 @@ sr_region_selection = 'real_data'
 keep_sr_exon_region = True
 normalize_lr_A = True
 kallisto_index = '/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m'
+kde_path = '/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA'

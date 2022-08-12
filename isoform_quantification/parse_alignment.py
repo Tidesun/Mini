@@ -314,7 +314,7 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
         read_end_pos += i
     read_length = comp_read_len(read_len_list)
     mapping['read_length'] = read_length
-    # mapping['read_pos'] = (read_start_pos,read_end_pos)
+    mapping['read_pos'] = (read_start_pos,read_end_pos)
     if read_end_pos - read_start_pos > 2 * tolerance:
         start_index = bisect.bisect_right(start_pos_list[rname], read_start_pos+tolerance)
         end_index = bisect.bisect_left(end_pos_list[rname], read_end_pos-tolerance)
