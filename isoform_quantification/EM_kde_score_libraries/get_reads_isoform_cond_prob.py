@@ -11,7 +11,7 @@ def get_all_reads_isoform_cond_prob_kde_score(args):
     with open(kde_path,'rb') as f:
         kde_model = pickle.load(f)
     with open(f'{output_path}/temp/{worker_id}','rb') as f:
-        reads_isoform_info = pickle.load(f)
+        reads_isoform_info,_ = pickle.load(f)
     all_reads_isoform_cond_prob = {}
     all_samples = []
     all_read_isoform = []
@@ -24,13 +24,18 @@ def get_all_reads_isoform_cond_prob_kde_score(args):
         isoform_len = isoform_df.loc[isoform,'isoform_len']
         log_isoform_len_prob = np.log(isoform_df.loc[isoform_df['isoform_len'] == isoform_len,'theta'].sum())
         cond_prob = log_read_prob - log_isoform_len_prob
+        if cond_prob <= -300:
+            cond_prob = 0 
+        else:
+            cond_prob = np.e**(cond_prob)
         if read not in all_reads_isoform_cond_prob:
             all_reads_isoform_cond_prob[read] = {}
         all_reads_isoform_cond_prob[read][isoform] = cond_prob
-    with open(f'{output_path}/read_cond_prob/{worker_id}','wb') as f:
+    Path(f'{output_path}/temp/cond_prob/').mkdir(exist_ok=True,parents=True)
+    with open(f'{output_path}/temp/cond_prob/{worker_id}','wb') as f:
         pickle.dump(all_reads_isoform_cond_prob,f)
 #     return all_reads_isoform_cond_prob
-def get_cond_prob_kde_random_samples(threads,output_path,isoform_df,kde_path):
+def get_cond_prob_kde_score(threads,output_path,isoform_df,kde_path):
     pool = mp.Pool(threads)
     futures = []
     for worker_id in range(threads):

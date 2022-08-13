@@ -30,12 +30,12 @@ def get_isoform_len_samples_dict(args):
     with open(f'{output_path}/temp/random_samples/{name}.pkl','wb') as f:
         pickle.dump(isoform_len_samples_dict,f)
 def prepare_kde_random_samples(isoform_len_set,threads):
-    min_isoform_len = 150
+    # min_isoform_len = 150
     isoform_len_list = sorted(list(isoform_len_set))
     list_of_isoform_len = []
     for isoform_len in isoform_len_list:
-        if isoform_len >= min_isoform_len:
-            list_of_isoform_len.append(isoform_len)
+        # if isoform_len >= min_isoform_len:
+        list_of_isoform_len.append(isoform_len)
     chunksize, extra = divmod(len(list_of_isoform_len), threads)
     if extra:
         chunksize += 1

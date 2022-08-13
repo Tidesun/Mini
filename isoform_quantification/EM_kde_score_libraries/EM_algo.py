@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from EM_kde_score_libraries.get_reads_isoform_cond_prob import get_cond_prob_kde_random_samples
+from EM_kde_score_libraries.get_reads_isoform_cond_prob import get_cond_prob_kde_score
 from EM_libraries.get_reads_isoform_info import get_reads_isoform_info,get_read_len_dist
 from EM_libraries.prepare_MT import prepare_MT
 import dill as pickle
@@ -10,7 +10,7 @@ from pathlib import Path
 import gc
 
 def E_step_MT(args):
-    MIN_PROB = 1e-100
+    MIN_PROB = np.e**(-300)
     worker_id,output_path,theta_df = args
     with open(f'{output_path}/temp/cond_prob/{worker_id}','rb') as f:
         all_reads_isoform_cond_prob = pickle.load(f)
@@ -109,7 +109,7 @@ def EM_algo_kde_score_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_r
     del expression_dict
     del read_len_dist
     gc.collect()
-    get_cond_prob_kde_random_samples(threads,output_path,isoform_df,kde_path)
+    get_cond_prob_kde_score(threads,output_path,isoform_df,kde_path)
     # get_cond_prob_kde_random_samples(threads,output_path,read_len_dist,kde_path,isoform_len_set)
     # if EM_choice == 'LIQA_modified':
     #     Sm_dict = get_Sm_dict(read_len_dist,isoform_df)
