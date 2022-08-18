@@ -11,6 +11,7 @@ from EM_libraries.EM_algo import EM_algo_main
 from EM_theta_iterative_libraries.EM_algo import EM_algo_theta_iter_main
 from EM_kde_libraries.EM_algo import EM_algo_kde_main
 from EM_kde_score_libraries.EM_algo import EM_algo_kde_score_main
+from EM_SR.EM_SR import EM_algo_SR
 import config
 def infer_read_len(short_read_alignment_file_path):
     READ_LEN = 150
@@ -168,5 +169,11 @@ def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_pat
             EM_algo_theta_iter_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
         else:
             EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
+    end_time = time.time()
+    print('Done in %.3f s'%(end_time-start_time),flush=True)
+def EM_SR(eff_len_file,short_read_alignment_file_path,output_path,threads):
+    start_time = time.time()
+    # isoform_len_dict,_,_ = parse_for_EM_algo(ref_file_path)
+    EM_algo_SR(short_read_alignment_file_path,eff_len_file,output_path,threads)
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
