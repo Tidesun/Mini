@@ -3,29 +3,31 @@ import pandas as pd
 import dill as pickle
 import numpy as np
 import multiprocessing as mp
+import glob
 from EM_SR.prepare_hits import prepare_hits
 def E_step_MT(args):
 #     MIN_PROB = 1e-100
-    worker_id,isoform_df,output_path = args
-    with open(f'{output_path}/temp/hits_dict/{worker_id}','rb') as f:
-        hits_dict = pickle.load(f)
     q = {}
-    for read in hits_dict:
-        sum_q = 0
-        q[read] = {}
-        for hit in hits_dict[read]:
-            isoform = hit['isoform']
-            q[read][isoform] = hit['ant'] * isoform_df.loc[isoform,'len_theta_product']
-            sum_q += q[read][isoform]
-        if sum_q != 0:
-            for isoform,prob in q[read].items():
-                q[read][isoform] /=sum_q
     isoform_q = {}
-    for read in q:
-        for isoform,prob in q[read].items():
-            if isoform not in isoform_q:
-                isoform_q[isoform] = 0
-            isoform_q[isoform] += prob
+    worker_id,isoform_df,output_path = args
+    for fpath in glob.glob(f'{output_path}/temp/hits_dict/{worker_id}_*'):
+        with open(fpath,'rb') as f:
+            hits_dict = pickle.load(f)
+        for read in hits_dict:
+            sum_q = 0
+            q[read] = {}
+            for hit in hits_dict[read]:
+                isoform = hit['isoform']
+                q[read][isoform] = hit['ant'] * isoform_df.loc[isoform,'len_theta_product']
+                sum_q += q[read][isoform]
+            if sum_q != 0:
+                for isoform,prob in q[read].items():
+                    q[read][isoform] /=sum_q
+        for read in q:
+            for isoform,prob in q[read].items():
+                if isoform not in isoform_q:
+                    isoform_q[isoform] = 0
+                isoform_q[isoform] += prob
     isoform_q_df = pd.Series(isoform_q)
     return isoform_q_df
 def E_step(isoform_df,output_path,threads):
@@ -85,5 +87,7 @@ def EM_algo_SR(SR_sam,eff_len_file,output_path,threads):
             theta_df.to_csv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',sep='\t')
             break
         theta_df = new_theta_df.copy()
-    return theta_df
-    
+    TPM_df = (theta_df/theta_df.sum())*1e6
+    TPM_df.name = 'TPM'
+    TPM_df.index.name = 'Isoform'
+    TPM_df.to_csv(f'{output_path}/EM_expression.out',sep='\t')

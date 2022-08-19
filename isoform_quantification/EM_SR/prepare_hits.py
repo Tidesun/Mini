@@ -4,32 +4,8 @@ import pandas as pd
 import dill as pickle
 import numpy as np
 import multiprocessing as mp
-def get_hits_dict(args):
-    worker_id,alignment_file_path,start_pos,num_reads,output_path = args
-    hits_dict = {}
-    all_fragment_lengths = []
-    num_reads_processed = 0
-    previous_read_name = None
-    with pysam.AlignmentFile(alignment_file_path, "r") as f:
-        f.seek(start_pos)
-        for read in f:
-            if previous_read_name is None:
-                previous_read_name = read.query_name
-            elif previous_read_name != read.query_name:
-                previous_read_name = read.query_name
-                num_reads_processed += 1
-            if num_reads_processed > num_reads:
-                break
-            if read.template_length > 0:
-                if read.query_name not in hits_dict:
-                    hits_dict[read.query_name] = []
-                if '|' in read.reference_name:
-                    isoform_name = read.reference_name.split('|')[0]
-                else:
-                    isoform_name = read.reference_name
-                hits_dict[read.query_name].append({'fragment_length':read.template_length,'isoform':isoform_name})
-                all_fragment_lengths.append(read.template_length)
-    num_reads_dict = {}
+import glob
+def dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path):
     for read in hits_dict:
         if len(hits_dict[read]) == 1:
             if hits_dict[read][0]['isoform'] not in num_reads_dict:
@@ -40,34 +16,89 @@ def get_hits_dict(args):
                 if hit['isoform'] not in num_reads_dict:
                     num_reads_dict[hit['isoform']] = 0
                 num_reads_dict[hit['isoform']] += 1/len(hits_dict[read])
-    num_reads_df = pd.Series(num_reads_dict)
-    with open(f'{output_path}/temp/hits_dict/{worker_id}','wb') as f:
+    with open(f'{output_path}/temp/hits_dict/{worker_id}_{batch_id}','wb') as f:
         pickle.dump(hits_dict,f)
-    print(f'Worker {worker_id} Done!',flush=True)
-    return all_fragment_lengths,num_reads_df
-def get_aln_line_marker(alignment_file_path,threads):
+    return num_reads_dict
+def get_hits_dict(args):
+    worker_id,alignment_file_path,start_pos,end_pos,output_path = args
+    hits_dict = {}
+    all_fragment_lengths = []
     previous_read_name = None
+    num_reads_dict = {}
+    batch_id = 0
+    buffer_size = 5e5
     with pysam.AlignmentFile(alignment_file_path, "r") as f:
-        line_offset = []
-        for line in f:
-            read_name = line.query_name
-            if previous_read_name is None or read_name != previous_read_name:
-                line_offset.append(f.tell())
-                previous_read_name = read_name
-    num_reads = len(line_offset)
-    chunksize, extra = divmod(num_reads, threads)
+        f.seek(start_pos)
+        for read in f:
+            if previous_read_name is None:
+                previous_read_name = read.query_name
+            elif previous_read_name != read.query_name:
+                previous_read_name = read.query_name
+                if len(hits_dict) == buffer_size:
+                    num_reads_dict = dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path)
+                    hits_dict = {}
+                    batch_id += 1
+                if f.tell() >= end_pos:
+                    break
+            if read.template_length > 0:
+                if read.query_name not in hits_dict:
+                    hits_dict[read.query_name] = []
+                if '|' in read.reference_name:
+                    isoform_name = read.reference_name.split('|')[0]
+                else:
+                    isoform_name = read.reference_name
+                hits_dict[read.query_name].append({'fragment_length':read.template_length,'isoform':isoform_name})
+                all_fragment_lengths.append(read.template_length)
+    if len(hits_dict) > 0:
+        num_reads_dict = dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path)
+        hits_dict = {}
+        batch_id += 1
+    num_reads_df = pd.Series(num_reads_dict)
+    print(f'Get_hits_dict: Worker {worker_id} done with {batch_id} batches!',flush=True)
+    return all_fragment_lengths,num_reads_df
+import os
+def get_aln_line_marker(alignment_file_path,threads):
+    '''
+    Split the sam file into THREADS chunks
+    !Split by read
+    '''
+    file_stats = os.stat(alignment_file_path)
+    total_bytes = file_stats.st_size
+    chunksize, extra = divmod(total_bytes, threads)
     if extra:
         chunksize += 1
-    aln_line_marker = []
+    byte_marker = []
     for i in range(threads):
-        aln_line_marker.append((line_offset[i*chunksize],chunksize,i))
-    return aln_line_marker
-def get_all_hits_dict(eff_len_dict,alignment_file_path,aln_line_marker,threads,output_path):
+        with open(alignment_file_path,'r') as f:
+            if i == 0:
+                start_offset = 0
+                for line in f:
+                    if line[0] != '@':
+                        break
+                    start_offset += len(line)
+            else:
+                f.seek(i*chunksize)
+                f.readline()
+                previous_read_name = None
+                previous_byte_pos = f.tell()
+                while True:
+                    line = f.readline()
+                    read_name = line.split('\t')[0]
+                    if previous_read_name is None:
+                        previous_read_name = read_name
+                    elif previous_read_name != read_name:
+                        start_offset = previous_byte_pos
+                        break
+                    previous_byte_pos = f.tell()
+            byte_marker.append(start_offset)
+    byte_marker.append(total_bytes)
+    return byte_marker
+def get_all_hits_dict(eff_len_dict,alignment_file_path,byte_marker,threads,output_path):
     pool = mp.Pool(threads)
     futures = []
     for i in range(threads):
-        start_pos,num_reads,worker_id = aln_line_marker[i]
-        args = worker_id,alignment_file_path,start_pos,num_reads,output_path
+        start_pos,end_os = byte_marker[i],byte_marker[i+1]
+        args = i,alignment_file_path,start_pos,end_os,output_path
         futures.append(pool.apply_async(get_hits_dict,(args,)))
     all_fragment_lengths = []
     list_of_num_reads_df = []
@@ -83,6 +114,8 @@ def get_all_hits_dict(eff_len_dict,alignment_file_path,aln_line_marker,threads,o
     num_reads_df = pd.Series(0,index=eff_len_df.index)
     for single_thread_num_reads_df in list_of_num_reads_df:
         num_reads_df = num_reads_df.add(single_thread_num_reads_df,fill_value=0)
+    total_reads = int(num_reads_df.sum())
+    print(f'Handled {total_reads} reads in total',flush=True)
     theta_df = num_reads_df/eff_len_df
     theta_df = theta_df/theta_df.sum()
     return theta_df,mean_f_len,std_f_len
@@ -92,14 +125,18 @@ def get_ant(fragment_length,eff_length,mean_f_len,std_f_len):
     return ant
 def get_all_ant(args):
     worker_id,eff_len_dict,mean_f_len,std_f_len,output_path = args
-    with open(f'{output_path}/temp/hits_dict/{worker_id}','rb') as f:
-        hits_dict = pickle.load(f)
-    for read in hits_dict:
-        for hit in hits_dict[read]:
-            eff_length = eff_len_dict[hit['isoform']]
-            hit['ant'] = get_ant(hit['fragment_length'],eff_length,mean_f_len,std_f_len)
-    with open(f'{output_path}/temp/hits_dict/{worker_id}','wb') as f:
-        pickle.dump(hits_dict,f)
+    num_batches_processed = 0
+    for fpath in glob.glob(f'{output_path}/temp/hits_dict/{worker_id}_*'):
+        with open(fpath,'rb') as f:
+            hits_dict = pickle.load(f)
+        for read in hits_dict:
+            for hit in hits_dict[read]:
+                eff_length = eff_len_dict[hit['isoform']]
+                hit['ant'] = get_ant(hit['fragment_length'],eff_length,mean_f_len,std_f_len)
+        with open(fpath,'wb') as f:
+            pickle.dump(hits_dict,f)
+        num_batches_processed += 1
+    print(f'Get_all_ant: Worker {worker_id} done with {num_batches_processed} batches!',flush=True)
 def get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path):
     pool = mp.Pool(threads)
     futures = []
@@ -117,12 +154,9 @@ def prepare_hits(SR_sam,eff_len_dict,output_path,threads):
     alignment_file_path = f'{output_path}/temp/SR.sam'
     print('Done',flush=True)
     print('Getting short reads info...',flush=True)
-    aln_line_marker = get_aln_line_marker(alignment_file_path,threads)
+    byte_marker = get_aln_line_marker(alignment_file_path,threads)
     Path(f'{output_path}/temp/hits_dict/').mkdir(exist_ok=True,parents=True)
-    theta_df,mean_f_len,std_f_len =  get_all_hits_dict(eff_len_dict,alignment_file_path,aln_line_marker,threads,output_path)
+    theta_df,mean_f_len,std_f_len =  get_all_hits_dict(eff_len_dict,alignment_file_path,byte_marker,threads,output_path)
     get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path)
     print('Done',flush=True)
     return theta_df
-
-
-    
