@@ -6,8 +6,9 @@ import numpy as np
 import multiprocessing as mp
 import glob
 import config
-from EM_SR.cal_eff_len import get_eff_len_dict
-def dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path):
+from EM_hybrid.cal_eff_len import get_eff_len_dict
+def dump_hits_dict(all_fragment_lengths,hits_dict,worker_id,batch_id,output_path):
+    num_reads_dict = {}
     for read in hits_dict:
         if len(hits_dict[read]) == 1:
             if hits_dict[read][0]['isoform'] not in num_reads_dict:
@@ -25,13 +26,17 @@ def dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path):
     hits_df = pd.DataFrame(rows,columns=['read','isoform','fragment_length']).set_index(['read','isoform'])
     with open(f'{output_path}/temp/hits_dict/{worker_id}_{batch_id}','wb') as f:
         pickle.dump(hits_df,f)
-    return num_reads_dict
+    num_reads_df = pd.Series(num_reads_dict)
+    with open(f'{output_path}/temp/fragment_lengths/{worker_id}_{batch_id}','wb') as f:
+        pickle.dump((all_fragment_lengths,num_reads_df),f)
+    frag_lengths_path = f'{output_path}/temp/fragment_lengths/{worker_id}_{batch_id}'
+    return frag_lengths_path
 def get_hits_dict(args):
-    worker_id,alignment_file_path,start_pos,end_pos,output_path = args
+    os.nice(10)
+    worker_id,alignment_file_path,start_pos,end_pos,output_path,queue = args
     hits_dict = {}
     all_fragment_lengths = []
     previous_read_name = None
-    num_reads_dict = {}
     batch_id = 0
     buffer_size = 1e6
     with pysam.AlignmentFile(alignment_file_path, "r") as f:
@@ -42,7 +47,9 @@ def get_hits_dict(args):
             elif previous_read_name != read.query_name:
                 previous_read_name = read.query_name
                 if len(hits_dict) == buffer_size:
-                    num_reads_dict = dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path)
+                    frag_lengths_path = dump_hits_dict(all_fragment_lengths,hits_dict,worker_id,batch_id,output_path)
+                    queue.put(frag_lengths_path)
+                    all_fragment_lengths = []
                     hits_dict = {}
                     batch_id += 1
                 if f.tell() >= end_pos:
@@ -57,12 +64,15 @@ def get_hits_dict(args):
                 hits_dict[read.query_name].append({'fragment_length':read.template_length,'isoform':isoform_name})
                 all_fragment_lengths.append(read.template_length)
     if len(hits_dict) > 0:
-        num_reads_dict = dump_hits_dict(hits_dict,num_reads_dict,worker_id,batch_id,output_path)
+        frag_lengths_path = dump_hits_dict(all_fragment_lengths,hits_dict,worker_id,batch_id,output_path)
+        queue.put(frag_lengths_path)
+        all_fragment_lengths = []
         hits_dict = {}
         batch_id += 1
-    num_reads_df = pd.Series(num_reads_dict)
+    queue.put('done')
+    
     print(f'Get_hits_dict: Worker {worker_id} done with {batch_id} batches!',flush=True)
-    return all_fragment_lengths,num_reads_df
+    return
 import os
 def get_aln_line_marker(alignment_file_path,threads):
     '''
@@ -100,30 +110,50 @@ def get_aln_line_marker(alignment_file_path,threads):
             byte_marker.append(start_offset)
     byte_marker.append(total_bytes)
     return byte_marker
+def get_all_hits_dict_listener(queue,threads,alignment_file_path):
+    all_fragment_lengths = []
+    list_of_num_reads_df = []
+    num_workers_done = 0
+    while True:
+        msg = queue.get()
+        if msg == 'kill':
+            break
+        elif msg == 'done':
+            num_workers_done += 1
+            if num_workers_done == threads:
+                mean_f_len = np.mean(all_fragment_lengths)
+                std_f_len = np.std(all_fragment_lengths)
+                eff_len_dict = get_eff_len_dict(alignment_file_path,mean_f_len,std_f_len,config.eff_len_option)
+                eff_len_df = pd.Series(eff_len_dict)
+                num_reads_df = pd.Series(0,index=eff_len_df.index)
+                for single_thread_num_reads_df in list_of_num_reads_df:
+                    num_reads_df = num_reads_df.add(single_thread_num_reads_df,fill_value=0)
+                theta_df = num_reads_df/eff_len_df
+                theta_df = theta_df/theta_df.sum()
+                break
+        else:
+            frag_lengths_path = msg
+            with open(frag_lengths_path,'rb') as f:
+                single_thread_fragment_lengths,num_reads_df  = pickle.load(f)
+            all_fragment_lengths += single_thread_fragment_lengths
+            list_of_num_reads_df.append(num_reads_df)
+    return theta_df,mean_f_len,std_f_len,eff_len_dict
 def get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path):
-    pool = mp.Pool(threads)
+    pool = mp.Pool(threads+1)
+    manager = mp.Manager()
+    queue = manager.Queue()    
+    watcher = pool.apply_async(get_all_hits_dict_listener, args=(queue,threads,alignment_file_path))
     futures = []
     for i in range(threads):
         start_pos,end_os = byte_marker[i],byte_marker[i+1]
-        args = i,alignment_file_path,start_pos,end_os,output_path
+        args = i,alignment_file_path,start_pos,end_os,output_path,queue
         futures.append(pool.apply_async(get_hits_dict,(args,)))
-    all_fragment_lengths = []
-    list_of_num_reads_df = []
     for future in futures:
-        single_thread_fragment_lengths,num_reads_df =future.get()
-        all_fragment_lengths += single_thread_fragment_lengths
-        list_of_num_reads_df.append(num_reads_df) 
+        future.get()
+    queue.put('kill')
+    theta_df,mean_f_len,std_f_len,eff_len_dict = watcher.get()
     pool.close()
     pool.join()
-    mean_f_len = np.mean(all_fragment_lengths)
-    std_f_len = np.std(all_fragment_lengths)
-    eff_len_dict = get_eff_len_dict(alignment_file_path,mean_f_len,std_f_len,config.eff_len_option)
-    eff_len_df = pd.Series(eff_len_dict)
-    num_reads_df = pd.Series(0,index=eff_len_df.index)
-    for single_thread_num_reads_df in list_of_num_reads_df:
-        num_reads_df = num_reads_df.add(single_thread_num_reads_df,fill_value=0)
-    theta_df = num_reads_df/eff_len_df
-    theta_df = theta_df/theta_df.sum()
     return theta_df,mean_f_len,std_f_len,eff_len_dict
 def get_ant(row,mean_f_len,std_f_len,eff_len_dict):
     fragment_length = row['fragment_length']
@@ -165,7 +195,9 @@ def prepare_hits(SR_sam,output_path,threads):
     print('Getting short reads info...',flush=True)
     byte_marker = get_aln_line_marker(alignment_file_path,threads)
     Path(f'{output_path}/temp/hits_dict/').mkdir(exist_ok=True,parents=True)
+    Path(f'{output_path}/temp/fragment_lengths/').mkdir(exist_ok=True,parents=True)
     theta_df,mean_f_len,std_f_len,eff_len_dict =  get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path)
+    print('Get all hits dict done',flush=True)
     get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path)
     print('Done',flush=True)
     return theta_df,eff_len_dict

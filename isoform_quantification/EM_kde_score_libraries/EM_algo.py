@@ -120,4 +120,6 @@ def EM_algo_kde_score_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_r
     TPM_df = (final_theta_df/final_theta_df.sum())*1e6
     TPM_df.name = 'TPM'
     TPM_df.index.name = 'Isoform'
+    TPM_df = TPM_df.to_frame().join(isoform_df).fillna(0)
+    TPM_df = TPM_df['TPM']
     TPM_df.to_csv(f'{output_path}/EM_expression.out',sep='\t')

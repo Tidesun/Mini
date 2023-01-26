@@ -5,7 +5,7 @@ import numpy as np
 import multiprocessing as mp
 import glob
 import os
-from EM_SR.prepare_hits import prepare_hits
+from EM_hybrid.prepare_hits import prepare_hits
 import config
 def E_step_cal(hits_df,isoform_df):
     hits_df['len_theta_product'] = isoform_df.loc[hits_df.index.droplevel(0),['len_theta_product']].set_index(hits_df.index)
@@ -30,7 +30,6 @@ def E_step_MT(args):
             isoform_df_fpath = msg
             with open(isoform_df_fpath,'rb') as f:
                 isoform_df = pickle.load(f)
-            isoform_q = {}
             for fpath in all_hits_dict_paths:
                 batch_id = fpath.split('/')[-1].split('_')[1]
                 with open(fpath,'rb') as f:

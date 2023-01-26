@@ -93,7 +93,7 @@ def get_isoform_df(isoform_len_df,expression_dict):
     isoform_df = pd.DataFrame({'isoform_len':isoform_len_df,'theta':theta_df})
     isoform_df = isoform_df.fillna(0)
     return isoform_df,theta_df
-def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
+def prepare_LR(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
     _,reads_isoform_info,_,expression_dict,_ = get_reads_isoform_info(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict)
     read_len_dict,read_len_dist,isoform_len_df = get_read_len_dist(reads_isoform_info,isoform_len_dict)
     prepare_MT(reads_isoform_info,read_len_dict,threads,output_path)
@@ -113,8 +113,13 @@ def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_rea
         get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict)
     elif EM_choice == "LIQA":
         get_cond_prob_MT_LIQA(threads,output_path,isoform_df,read_len_dist)
+    return theta_df,isoform_df
+def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
+    theta_df,isoform_df = prepare_LR(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice)
     final_theta_df = EM_algo(threads,theta_df,output_path)
     TPM_df = (final_theta_df/final_theta_df.sum())*1e6
     TPM_df.name = 'TPM'
     TPM_df.index.name = 'Isoform'
+    TPM_df = TPM_df.to_frame().join(isoform_df).fillna(0)
+    TPM_df = TPM_df['TPM']
     TPM_df.to_csv(f'{output_path}/EM_expression.out',sep='\t')

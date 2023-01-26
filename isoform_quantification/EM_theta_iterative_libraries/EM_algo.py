@@ -133,4 +133,7 @@ def EM_algo_theta_iter_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_
     TPM_df = (final_theta_df/final_theta_df.sum())*1e6
     TPM_df.name = 'TPM'
     TPM_df.index.name = 'Isoform'
+    isoform_len_df.name = 'Isoform_len'
+    TPM_df = TPM_df.to_frame().join(isoform_len_df.to_frame()).fillna(0)
+    TPM_df = TPM_df['TPM']
     TPM_df.to_csv(f'{output_path}/EM_expression.out',sep='\t')

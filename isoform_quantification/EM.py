@@ -6,13 +6,16 @@ from pathlib import Path
 from construct_feature_matrix import generate_all_feature_matrix_short_read
 from construct_long_reads_feature_matrix import generate_all_feature_matrix_long_read
 from parse_annotation_main import parse_reference_annotation, process_annotation_for_alignment
-from parse_alignment_main import parse_alignment
+from parse_alignment_EM import parse_alignment_EM
 from EM_libraries.EM_algo import EM_algo_main
 from EM_theta_iterative_libraries.EM_algo import EM_algo_theta_iter_main
 from EM_kde_libraries.EM_algo import EM_algo_kde_main
 from EM_kde_score_libraries.EM_algo import EM_algo_kde_score_main
 from EM_SR.EM_SR import EM_algo_SR
+from EM_hybrid.EM_hybrid import EM_algo_hybrid
 import config
+from operator import itemgetter, attrgetter
+import pickle
 def infer_read_len(short_read_alignment_file_path):
     READ_LEN = 150
     sr_sam_valid = False
@@ -63,45 +66,34 @@ def map_short_reads(short_read_alignment_file_path, READ_JUNC_MIN_MAP_LEN, gene_
         gene_isoforms_dict, SR_gene_regions_dict, short_read_gene_regions_read_count, SR_read_len, SR_genes_regions_len_dict, num_SRs)
     print('Done in %.3f s' % (end_time-start_time), flush=True)
     return short_read_gene_matrix_dict, SR_read_len
-def map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict):
+def map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering):
     print('Mapping long read to regions...',flush=True)
     start_time = time.time()
     if multi_mapping_filtering == 'unique_only':
         pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
-        long_read_alignment_file_path = f'{output_path}/temp_lr.sam'
+        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-o',f'{output_path}/temp_lr.sorted.sam')
+        long_read_alignment_file_path = f'{output_path}/temp_lr.sorted.sam'
     elif multi_mapping_filtering == 'best':
         pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
-        long_read_alignment_file_path = f'{output_path}/temp_lr.sam'
-    long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs,filtered_gene_regions_read_length,gene_regions_read_pos = parse_alignment(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict, True,filtering,threads)
+        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-o',f'{output_path}/temp_lr.sorted.sam')
+        long_read_alignment_file_path = f'{output_path}/temp_lr.sorted.sam'
+    print(long_read_alignment_file_path)
+    parse_alignment_EM(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST)
+    # long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs,filtered_gene_regions_read_length,gene_regions_read_pos = parse_alignment(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict, True,filtering,threads)
     try:
         Path(f'{output_path}/temp_sr.sam').unlink()
+        Path(f'{output_path}/temp_sr.sorted.sam').unlink()
     except:
         pass
     try:
         Path(f'{output_path}/temp_lr.sam').unlink()
+        Path(f'{output_path}/temp_lr.sorted.sam').unlink()
     except:
         pass
-    print('Mapped {} long reads'.format(num_LRs,flush=True))
-    print('Constructing matrix and calculating condition number...',flush=True)
-    long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict, LR_gene_regions_dict, long_read_gene_regions_read_count, long_read_gene_regions_read_length,
-                                                                       LR_genes_regions_len_dict, gene_isoforms_length_dict, raw_isoform_exons_dict, num_LRs, total_long_read_length, READ_JUNC_MIN_MAP_LEN, output_path, threads)
+    # print('Mapped {} long reads'.format(num_LRs,flush=True))
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
-    return long_read_gene_matrix_dict,gene_regions_read_pos,long_read_gene_regions_read_length
-def get_info_dict_list(gene_isoforms_dict,gene_exons_dict,raw_gene_exons_dict,raw_isoform_exons_dict,gene_isoforms_length_dict):
-    raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict = defaultdict(dict),defaultdict(dict),defaultdict(dict)
-    raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict = {},{},{}
-    for chr_name in raw_isoform_exons_dict:
-        for gene_name in raw_isoform_exons_dict[chr_name]:
-            raw_gene_num_exon_dict[chr_name][gene_name] = len(raw_gene_exons_dict[chr_name][gene_name])
-            gene_num_exon_dict[chr_name][gene_name] = len(gene_exons_dict[chr_name][gene_name])
-            gene_num_isoform_dict[chr_name][gene_name] = len(gene_isoforms_dict[chr_name][gene_name])
-            for isoform_name in raw_isoform_exons_dict[chr_name][gene_name]:
-                raw_isoform_num_exon_dict[isoform_name] = len(raw_isoform_exons_dict[chr_name][gene_name][isoform_name]['start_pos'])
-                isoform_length_dict[isoform_name] = gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
-                num_isoforms_dict[isoform_name] =  len(raw_isoform_exons_dict[chr_name][gene_name])
-    info_dict_list = [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict]
-    return info_dict_list
+    # return long_read_gene_matrix_dict,gene_regions_read_pos,long_read_gene_regions_read_length
 import re
 def parse_for_EM_algo(annotation):
     gene_exon_dict = {}
@@ -139,25 +131,47 @@ def parse_for_EM_algo(annotation):
             isoform_len_dict[isoform] += exon[1] - exon[0] + 1
 #     isoform_len_set = set(isoform_len_dict.values())
     return isoform_len_dict,isoform_exon_dict,strand_dict
-def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
-    print(alpha)
-    Path(output_path).mkdir(parents=True, exist_ok=True)
-    print('Preprocessing...',flush=True)
+def parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads,READ_JUNC_MIN_MAP_LEN=15):
     _,gene_points_dict,gene_isoforms_dict,\
         _,_,LR_gene_regions_dict,LR_genes_regions_len_dict,\
             gene_isoforms_length_dict,raw_isoform_exons_dict,_,\
                 _,_,gene_range,gene_interval_tree_dict = \
                     parse(ref_file_path,READ_JUNC_MIN_MAP_LEN,short_read_alignment_file_path,threads)
-    _,gene_regions_read_pos,_ = map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_isoforms_dict,gene_points_dict,gene_range,gene_interval_tree_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,filtering,output_path,multi_mapping_filtering,threads,raw_isoform_exons_dict)
     isoform_len_dict,isoform_exon_dict,strand_dict = parse_for_EM_algo(ref_file_path)
-    del gene_points_dict
-    del gene_isoforms_dict
-    del LR_genes_regions_len_dict
-    del gene_isoforms_length_dict
-    del raw_isoform_exons_dict
-    del gene_range
-    del gene_interval_tree_dict
-    gc.collect()
+    
+    start_pos_list,end_pos_list,start_gname_list,end_gname_list,CHR_LIST = dict(),dict(),dict(),dict(),list(gene_range.keys())
+    CHR_LIST = list(gene_range.keys())
+    for rname in CHR_LIST:     
+        # Sort based on start position
+        temp_list = sorted(gene_range[rname], key=itemgetter(1))
+        start_pos_list[rname] = [temp_list[j][1] for j in range(len(temp_list))]
+        start_gname_list[rname] = [temp_list[j][0] for j in range(len(temp_list))]
+        # Sort based on end position
+        temp_list = sorted(gene_range[rname], key=itemgetter(2))
+        end_pos_list[rname] = [temp_list[j][2] for j in range(len(temp_list))]
+        end_gname_list[rname] = [temp_list[j][0] for j in range(len(temp_list))]
+    Path(f'{output_path}/temp/LR_alignments_dict/').mkdir(exist_ok=True,parents=True)
+    for rname in gene_points_dict:
+        dic = [gene_points_dict[rname],gene_interval_tree_dict[rname],LR_gene_regions_dict[rname],start_pos_list[rname],end_pos_list[rname],start_gname_list[rname],end_gname_list[rname]]
+        with open(f'{output_path}/temp/LR_alignments_dict/{rname}','wb') as f:
+            pickle.dump(dic,f)
+    with open(f'{output_path}/temp/LR_alignments_dict/isoform_dict','wb') as f:
+        pickle.dump([isoform_len_dict,isoform_exon_dict,strand_dict],f)
+    return isoform_len_dict,CHR_LIST
+            
+    # for dic in [isoform_len_dict,isoform_exon_dict,strand_dict]:
+        
+    
+
+def prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads,multi_mapping_filtering='best',READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
+    isoform_len_dict,CHR_LIST = parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
+    map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering)
+    return isoform_len_dict
+def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
+    print(alpha)
+    print('Preprocessing...',flush=True)
     print('Start quantification...',flush=True)
     start_time = time.time()
     if EM_choice == 'kde':
@@ -171,9 +185,20 @@ def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_pat
             EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
-def EM_SR(eff_len_file,short_read_alignment_file_path,output_path,threads):
+def EM_SR(short_read_alignment_file_path,output_path,threads):
     start_time = time.time()
     # isoform_len_dict,_,_ = parse_for_EM_algo(ref_file_path)
-    EM_algo_SR(short_read_alignment_file_path,eff_len_file,output_path,threads)
+    EM_algo_SR(short_read_alignment_file_path,output_path,threads)
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
+def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    isoform_len_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
+    print(alpha)
+    print('Preprocessing...',flush=True)
+    print('Start quantification...',flush=True)
+    start_time = time.time()
+    EM_algo_hybrid(isoform_len_dict,short_read_alignment_file_path,output_path,threads,EM_choice)
+    end_time = time.time()
+    print('Done in %.3f s'%(end_time-start_time),flush=True)
+

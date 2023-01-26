@@ -1,7 +1,7 @@
 import argparse
 from TrEESR import TrEESR
 from TransELS import TransELS
-from EM import EM,EM_SR
+from EM import EM,EM_SR,EM_hybrid
 import config
 import os
 # import os
@@ -108,9 +108,13 @@ def parse_arguments():
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
     optional_EM.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
     optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified]")
-    optional_EM.add_argument('--iter_theta',type=str, default='True',help="Whether use updated theta to re-calculate conditional prob [True,False]")
+    optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
-    optional_EM.add_argument('--eff_len_file',type=str, default='/fs/project/PCON0009/Yunhao/Project/Mili/Kvalue/DataSim/GroundTruth/Kallisto/H1-hESC_Illumina_rep1.abundance.tsv',help="Eff length path")
+    optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
+    optional_EM.add_argument('--EM_SR_num_iters',type=int, default=1000,help="Number of EM SR iterations")
+    optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
+    optional_EM.add_argument('--inital_theta',type=str, default='LR',help="inital_theta [LR,SR]")
+
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
@@ -233,8 +237,15 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
         if args.DL_model is None:
             args.DL_model = args.SR_quantification_option + '.pt'
+        config.alpha = args.alpha
+        config.alpha_df_path = args.alpha_df_path
+        config.inital_theta = args.inital_theta
         if args.EM_choice == 'SR':
-            EM_SR(args.eff_len_file,args.short_read_sam_path,args.output_path,args.threads)
+            config.eff_len_option = args.eff_len_option
+            config.EM_SR_num_iters = args.EM_SR_num_iters
+            EM_SR(args.short_read_sam_path,args.output_path,args.threads)
+        elif args.EM_choice == 'hybrid':
+            EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         else:
             EM(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
     else:
