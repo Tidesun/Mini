@@ -1,4 +1,5 @@
 weights/
+base/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 isoform_quantification/external_bin

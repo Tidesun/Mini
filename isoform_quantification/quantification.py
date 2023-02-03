@@ -2,7 +2,7 @@ from collections import defaultdict
 import numpy as np
 from numpy import linalg as LA
 from qpsolvers import solve_qp
-from predict_params import predict_params_all_genes
+# from predict_params import predict_params_all_genes
 import config
 # from tqdm import tqdm
 def normalize_expression(gene_isoform_expression_dict):

@@ -35,9 +35,9 @@ def parse_arguments():
     optional_TrEESR.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
     optional_TrEESR.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
     optional_TrEESR.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
-    weight_path = os.path.dirname(os.path.realpath(__file__))+'/weights/nanosim_weight_dict.pkl'
-    assert os.path.exists(weight_path)
-    optional_TrEESR.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
+    # weight_path = os.path.dirname(os.path.realpath(__file__))+'/weights/nanosim_weight_dict.pkl'
+    # assert os.path.exists(weight_path)
+    # optional_TrEESR.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
 
     requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -52,7 +52,7 @@ def parse_arguments():
 
     optional_TransELS.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
     optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
-    optional_TransELS.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
+    # optional_TransELS.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
     optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_TransELS.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -71,7 +71,7 @@ def parse_arguments():
     optional_TransELS.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
     optional_TransELS.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_TransELS.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
-    optional_TransELS.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
+    # optional_TransELS.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
    
     parser_EM = subparsers.add_parser('EM',help='Isoform quantification by EM algorith ')
     requiredNamed_EM = parser_EM.add_argument_group('required named arguments for isoform quantification')
@@ -87,7 +87,7 @@ def parse_arguments():
 
     optional_EM.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
     optional_EM.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
-    optional_EM.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
+    # optional_EM.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
     optional_EM.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_EM.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_EM.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -106,7 +106,7 @@ def parse_arguments():
     optional_EM.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
     optional_EM.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
-    optional_EM.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
+    # optional_EM.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
     optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified]")
     optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
@@ -124,7 +124,7 @@ def parse_arguments():
     config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
     config.multi_exon_region_weight = args.multi_exon_region_weight
     config.sr_region_selection = args.sr_region_selection
-    config.region_weight_path = args.region_weight_path
+    # config.region_weight_path = args.region_weight_path
     if args.output_matrix_info == 'True':
         config.output_matrix_info = True
     else:
@@ -146,7 +146,7 @@ def parse_arguments():
     else:
         config.use_weight_matrix = False
     config.add_full_length_region = args.add_full_length_region
-    config.kallisto_index = args.kallisto_index
+    # config.kallisto_index = args.kallisto_index
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
         print('Calculate K values')
