@@ -1,22 +1,21 @@
-# Mili
-**M͟i͟**xed **l̲**inear modelling for **i̲**soform quantification (**Mili**)
+# Mini
+**M͟i͟**xed Bayesian **n**etwork for **i̲**soform quantification (**Mini**)
 
-**Mili** achieves highly-accurate gene isoform quantification using (1) hybrid sequencing (long-read + short-read) data or (2) long-read-alone data.
+**Mini** achieves highly-accurate gene isoform quantification using (1) hybrid sequencing (long-read + short-read) data or (2) long-read-alone data.
 
-**Mili** features: 
+**Mini** features: 
 1. Novel **K-value** metric: Be able to identify gene isoforms with erroneous quantification by other short-reads-alone methods.
 2. **Mixed linear model**: Combine the strengths of long reads and short reads to achieve high accuracy in the estimation of isoform abundances, especially for lowly expressed or erronenous isoforms identified through K-value.
 ## Installation
 ```
-git clone https://github.com/Augroup/Mili.git
-cd Mili
+git clone https://github.com/Augroup/Mini.git
+cd Mini
 python -m venv base
 source base/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-To use other tools for short reads quantification, due to file size limitation by Github, you need to download the binary file of other tools from [external_bin.zip](https://www.dropbox.com/s/pb1th3hihbn4qv3/external_bin.zip?dl=0) and unzip it to isoform_quantification/external_bin.
-## Isoform quantification by Mili
+## Isoform quantification by Mini
 ```
 usage: main.py quantify [-h] -gtf GTF_ANNOTATION_PATH -lrsam
                         LONG_READ_SAM_PATH -o OUTPUT_PATH
