@@ -76,10 +76,10 @@ def parse_arguments():
     parser_EM = subparsers.add_parser('EM',help='Isoform quantification by EM algorith ')
     requiredNamed_EM = parser_EM.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_EM.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
-    requiredNamed_EM.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=True)
     requiredNamed_EM.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
     
     optional_EM = parser_EM.add_argument_group('optional arguments')
+    optional_EM.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False,default=None)
     optional_EM.add_argument('-srsam','--short_read_sam_path', type=str, help="The path of short read sam file",default=None)
     optional_EM.add_argument('-srfastq','--short_read_fastq', type=str, help="The path of short read fastq file",default=None)
     optional_EM.add_argument('-sr_m1','--short_read_mate1_fastq', type=str, help="The path of short read mate 1 fastq file",default=None)

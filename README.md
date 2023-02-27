@@ -4,8 +4,8 @@
 **Mini** achieves highly-accurate gene isoform quantification using (1) hybrid sequencing (long-read + short-read) data or (2) long-read-alone data.
 
 **Mini** features: 
-1. Novel **K-value** metric: Be able to identify gene isoforms with erroneous quantification by other short-reads-alone methods.
-2. **Mixed Bayesian network**: Combine the strengths of long reads and short reads to achieve high accuracy in the estimation of isoform abundances, especially for lowly expressed or erronenous isoforms identified through K-value.
+1. Novel **K-value** metric: a key feature of the sequence share pattern that causes particularly high abundance estimation error, allowing us to identify a problematic set of gene isoforms with erroneous quantification that researchers should take extra attention in the study
+2. **Mixed Bayesian network**: a novel mixed Bayesian network model for transcript abundance estimation that can be applied to three different data scenarios: long-read-alone, short-read-alone and hybrid (i.e., long reads plus short reads) integrating the strengths of both long reads and short reads.
 ## Installation
 ```
 git clone https://github.com/Augroup/Mini.git
@@ -74,7 +74,24 @@ optional arguments
                         Inital_theta [LR,SR]. Set the initial theta based on the isoform 
                         expression given long reads(LR) or short reads (SR). Default is LR.
 ```
+### Quantify using short reads data
+```
+python isoform_quantification/main.py quantify \
+-gtf GTF_ANNOTATION_PATH \
+-srsam SHORT_READ_SAM_PATH \
+-t 1 \
+-o OUTPUT_PATH
 
+arguments:
+  -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
+                        The path of isoform annotation file in GTF format
+  -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
+                        The path of short read sam file mapping to reference transcriptome.
+  -t THREADS, --threads THREADS
+                        Number of threads. Default is 1.
+  -o OUTPUT_PATH, --output_path OUTPUT_PATH
+                        The path of output directory
+```
 ## Calculate K-value
 ```
 usage: main.py cal_K_value [-h] -gtf GTF_ANNOTATION_PATH -o OUTPUT_PATH
