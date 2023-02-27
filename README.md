@@ -5,7 +5,7 @@
 
 **Mini** features: 
 1. Novel **K-value** metric: Be able to identify gene isoforms with erroneous quantification by other short-reads-alone methods.
-2. **Mixed linear model**: Combine the strengths of long reads and short reads to achieve high accuracy in the estimation of isoform abundances, especially for lowly expressed or erronenous isoforms identified through K-value.
+2. **Mixed Bayesian network**: Combine the strengths of long reads and short reads to achieve high accuracy in the estimation of isoform abundances, especially for lowly expressed or erronenous isoforms identified through K-value.
 ## Installation
 ```
 git clone https://github.com/Augroup/Mini.git
@@ -61,13 +61,13 @@ arguments:
 ```
 optional arguments
   --iter_theta ITER_THETA
-                        Whether use updated theta to re-calculate conditional probablity [True,False]. See the online methods for detailed information. Default is False to speed up the calculation.
+                        Whether use updated theta to re-calculate conditional probablity [True,False]. \n See the online methods for detailed information. Default is False to speed up the calculation.
   --eff_len_option EFF_LEN_OPTION
-                        How to calculate the effective length [Kallisto,RSEM]. Choose Kallisto or RSEM to calculate the effective length in the same way as the corresponding method. Default is Kallisto.
+                        How to calculate the effective length [Kallisto,RSEM]. Choose Kallisto \n or RSEM to calculate the effective length in the same way as the \n corresponding method. Default is Kallisto.
   --EM_SR_num_iters EM_SR_NUM_ITERS
                         Number of maximum iterations for EM algorithm. Default is 200.
   --inital_theta INITAL_THETA
-                        Inital_theta [LR,SR]. Set the initial theta based on the isoform expression given long reads(LR) or short reads (SR). Default is LR.
+                        Inital_theta [LR,SR]. Set the initial theta based on the isoform expression \n given long reads(LR) or short reads (SR). Default is LR.
 ```
 
 ## Calculate K-value
