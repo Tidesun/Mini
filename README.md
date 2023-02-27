@@ -1,5 +1,5 @@
 # Mini
-**M͟i͟**xed Bayesian **n**etwork for **i̲**soform quantification (**Mini**)
+**M͟i͟**xed Bayesian **n̲**etwork for **i̲**soform quantification (**Mini**) provides a highly-accurate bioinformatics tool for transcript abundance estimation.
 
 **Mini** features: 
 1. Novel **K-value** metric: a key feature of the sequence share pattern that causes particularly high abundance estimation error, allowing us to identify a problematic set of gene isoforms with erroneous quantification that researchers should take extra attention in the study
