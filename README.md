@@ -62,13 +62,17 @@ arguments:
 optional arguments
   --iter_theta ITER_THETA
                         Whether use updated theta to re-calculate conditional probablity [True,False].
-                        <br>See the online methods for detailed information. Default is False to speed up the calculation.
+                        See the online methods for detailed information. Default is False to 
+                        speed up the calculation.
   --eff_len_option EFF_LEN_OPTION
-                        How to calculate the effective length [Kallisto,RSEM]. Choose Kallisto \n or RSEM to calculate the effective length in the same way as the \n corresponding method. Default is Kallisto.
+                        How to calculate the effective length [Kallisto,RSEM]. Choose Kallisto 
+                        or RSEM to calculate the effective length in the same way as the 
+                        corresponding method. Default is Kallisto.
   --EM_SR_num_iters EM_SR_NUM_ITERS
                         Number of maximum iterations for EM algorithm. Default is 200.
   --inital_theta INITAL_THETA
-                        Inital_theta [LR,SR]. Set the initial theta based on the isoform expression \n given long reads(LR) or short reads (SR). Default is LR.
+                        Inital_theta [LR,SR]. Set the initial theta based on the isoform 
+                        expression given long reads(LR) or short reads (SR). Default is LR.
 ```
 
 ## Calculate K-value
