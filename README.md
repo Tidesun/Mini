@@ -1,8 +1,6 @@
 # Mini
 **M͟i͟**xed Bayesian **n**etwork for **i̲**soform quantification (**Mini**)
 
-**Mini** achieves highly-accurate gene isoform quantification using (1) hybrid sequencing (long-read + short-read) data or (2) long-read-alone data.
-
 **Mini** features: 
 1. Novel **K-value** metric: a key feature of the sequence share pattern that causes particularly high abundance estimation error, allowing us to identify a problematic set of gene isoforms with erroneous quantification that researchers should take extra attention in the study
 2. **Mixed Bayesian network**: a novel mixed Bayesian network model for transcript abundance estimation that can be applied to three different data scenarios: long-read-alone, short-read-alone and hybrid (i.e., long reads plus short reads) integrating the strengths of both long reads and short reads.
