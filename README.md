@@ -61,7 +61,8 @@ arguments:
 ```
 optional arguments
   --iter_theta ITER_THETA
-                        Whether use updated theta to re-calculate conditional probablity [True,False]. \n See the online methods for detailed information. Default is False to speed up the calculation.
+                        Whether use updated theta to re-calculate conditional probablity [True,False].
+                        <br>See the online methods for detailed information. Default is False to speed up the calculation.
   --eff_len_option EFF_LEN_OPTION
                         How to calculate the effective length [Kallisto,RSEM]. Choose Kallisto \n or RSEM to calculate the effective length in the same way as the \n corresponding method. Default is Kallisto.
   --EM_SR_num_iters EM_SR_NUM_ITERS
