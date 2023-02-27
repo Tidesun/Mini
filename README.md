@@ -80,6 +80,7 @@ python isoform_quantification/main.py quantify \
 -gtf GTF_ANNOTATION_PATH \
 -srsam SHORT_READ_SAM_PATH \
 -t 1 \
+--EM_choice SR \
 -o OUTPUT_PATH
 
 arguments:

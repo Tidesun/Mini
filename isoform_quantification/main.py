@@ -73,7 +73,7 @@ def parse_arguments():
     # optional_TransELS.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
     # optional_TransELS.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
    
-    parser_EM = subparsers.add_parser('EM',help='Isoform quantification by EM algorith ')
+    parser_EM = subparsers.add_parser('quantify', aliases=['EM'],help='Isoform quantification by EM algorithm')
     requiredNamed_EM = parser_EM.add_argument_group('required named arguments for isoform quantification')
     requiredNamed_EM.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
     requiredNamed_EM.add_argument('-o','--output_path', type=str, help="The path of output directory",required=True)
@@ -107,7 +107,7 @@ def parse_arguments():
     optional_EM.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='True',help="Keep exon region for SR if using real data to filter region [default:True][True,False]")
     # optional_EM.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
-    optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified]")
+    optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified,LR]")
     optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
@@ -194,7 +194,7 @@ def parse_arguments():
     #     if args.DL_model is None:
     #         args.DL_model = args.SR_quantification_option + '.pt'
     #     TransELS(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN)
-    elif args.subparser_name in ['quantify']:
+    elif args.subparser_name in ['quantify','EM']:
         config.kde_path = args.kde_path
         if args.training == 'True':
             args.training = True
@@ -247,6 +247,8 @@ def parse_arguments():
         elif args.EM_choice == 'hybrid':
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         else:
+            if args.EM_choice == 'LR':
+                args.EM_choice = 'LIQA_modified'
             EM(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
     else:
         parser.print_help()
