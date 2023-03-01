@@ -165,32 +165,36 @@ def parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_a
 
 def prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads,multi_mapping_filtering='best',READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
     isoform_len_dict,CHR_LIST = parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
-    map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering)
+    if long_read_alignment_file_path is not None:
+        map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering)
     return isoform_len_dict
 def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
-    Path(output_path).mkdir(parents=True, exist_ok=True)
-    isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
-    print(alpha)
-    print('Preprocessing...',flush=True)
-    print('Start quantification...',flush=True)
-    start_time = time.time()
-    if EM_choice == 'kde':
-        EM_algo_kde_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
-    elif EM_choice == 'kde_score':
-        EM_algo_kde_score_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
-    else:
-        if iter_theta == 'True':
-            EM_algo_theta_iter_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
-        else:
-            EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
-    end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
+    # Path(output_path).mkdir(parents=True, exist_ok=True)
+    # isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
+    # print(alpha)
+    # print('Preprocessing...',flush=True)
+    # print('Start quantification...',flush=True)
+    # start_time = time.time()
+    # if EM_choice == 'kde':
+    #     EM_algo_kde_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
+    # elif EM_choice == 'kde_score':
+    #     EM_algo_kde_score_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice,config.kde_path,set(isoform_len_dict.values()))
+    # else:
+    #     if iter_theta == 'True':
+    #         EM_algo_theta_iter_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
+    #     else:
+    #         EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_pos,LR_gene_regions_dict,threads,output_path,EM_choice)
+    # end_time = time.time()
+    # print('Done in %.3f s'%(end_time-start_time),flush=True)
+    pass
 def EM_SR(short_read_alignment_file_path,output_path,threads):
-    start_time = time.time()
-    # isoform_len_dict,_,_ = parse_for_EM_algo(ref_file_path)
-    EM_algo_SR(short_read_alignment_file_path,output_path,threads)
-    end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
+    # Path(output_path).mkdir(parents=True, exist_ok=True)
+    # start_time = time.time()
+    # # isoform_len_dict,_,_ = parse_for_EM_algo(ref_file_path)
+    # EM_algo_SR(short_read_alignment_file_path,output_path,threads)
+    # end_time = time.time()
+    # print('Done in %.3f s'%(end_time-start_time),flush=True)
+    pass
 def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
     Path(output_path).mkdir(parents=True, exist_ok=True)
     isoform_len_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)

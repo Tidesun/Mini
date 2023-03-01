@@ -169,17 +169,21 @@ def EM_manager(threads,eff_len_dict,theta_df,output_path):
     return theta_df
 def EM_algo_hybrid(isoform_len_dict,SR_sam,output_path,threads,EM_choice):
     isoform_len_df = pd.Series(isoform_len_dict)
-    theta_LR_df,_ = prepare_LR(isoform_len_df,threads,output_path)
-    theta_SR_df,eff_len_dict = prepare_hits(SR_sam,output_path,threads)
+    eff_len_dict = {}
     if config.inital_theta == 'SR':
+        theta_SR_df,eff_len_dict = prepare_hits(SR_sam,output_path,threads)
         theta_df = theta_SR_df
     elif config.inital_theta == 'LR':
+        theta_LR_df,_ = prepare_LR(isoform_len_df,threads,output_path)
         theta_df = theta_LR_df
     print('Using {} as initial theta'.format(config.inital_theta))
     Path(f'{output_path}/EM_iterations/').mkdir(exist_ok=True,parents=True)
     theta_df = EM_manager(threads,eff_len_dict,theta_df,output_path)
     TPM_df = (theta_df/theta_df.sum())*1e6
-    eff_len_df = pd.Series(eff_len_dict)
+    if eff_len_dict == None:
+        eff_len_df = isoform_len_df.copy()
+    else:
+        eff_len_df = pd.Series(eff_len_dict)
     out_df = pd.DataFrame({'TPM':TPM_df,'Effective_length':eff_len_df})
     out_df.index.name = 'Isoform'
     out_df.to_csv(f'{output_path}/EM_expression.out',sep='\t')

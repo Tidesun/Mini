@@ -226,8 +226,8 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
-        if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
-            raise Exception('SR_quantification_option is not valid.Options: [Mili, Kallisto,Salmon, RSEM]')
+        # if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
+        #     raise Exception('SR_quantification_option is not valid.Options: [Mili, Kallisto,Salmon, RSEM]')
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         SR_fastq_list = []
@@ -243,13 +243,17 @@ def parse_arguments():
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option
             config.EM_SR_num_iters = args.EM_SR_num_iters
-            EM_SR(args.short_read_sam_path,args.output_path,args.threads)
+            args.long_read_sam_path = None
+            args.alpha = 0
+            EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         elif args.EM_choice == 'hybrid':
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         else:
             if args.EM_choice == 'LR':
                 args.EM_choice = 'LIQA_modified'
-            EM(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
+            args.short_read_sam_path = None
+            args.alpha = 1
+            EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)    
     else:
         parser.print_help()
 if __name__ == "__main__":
