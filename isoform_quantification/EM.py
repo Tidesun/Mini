@@ -205,4 +205,8 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
     EM_algo_hybrid(isoform_len_dict,short_read_alignment_file_path,output_path,threads,EM_choice)
     end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
+    try:
+        shutil.rmtree(f'{output_path}/temp/')
+    except:
+        pass
 
