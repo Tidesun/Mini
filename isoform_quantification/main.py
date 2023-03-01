@@ -237,18 +237,21 @@ def parse_arguments():
             SR_fastq_list = [args.short_read_mate1_fastq,args.short_read_mate2_fastq]
         if args.DL_model is None:
             args.DL_model = args.SR_quantification_option + '.pt'
-        config.alpha = args.alpha
-        config.alpha_df_path = args.alpha_df_path
-        config.inital_theta = args.inital_theta
+        config.EM_SR_num_iters = args.EM_SR_num_iters
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option
-            config.EM_SR_num_iters = args.EM_SR_num_iters
             args.long_read_sam_path = None
             args.alpha = 0
             args.inital_theta = 'SR'
+            config.alpha = args.alpha
+            config.alpha_df_path = args.alpha_df_path
+            config.inital_theta = args.inital_theta
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         elif args.EM_choice == 'hybrid':
             args.alpha = 0.5
+            config.alpha = args.alpha
+            config.alpha_df_path = args.alpha_df_path
+            config.inital_theta = args.inital_theta
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         else:
             if args.EM_choice == 'LR':
@@ -256,6 +259,9 @@ def parse_arguments():
             args.short_read_sam_path = None
             args.alpha = 1
             args.inital_theta = 'LR'
+            config.alpha = args.alpha
+            config.alpha_df_path = args.alpha_df_path
+            config.inital_theta = args.inital_theta
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)    
     else:
         parser.print_help()
