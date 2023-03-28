@@ -1,5 +1,5 @@
 use_weight_matrix = True
-same_struc_isoform_handling = 'merge'
+same_struc_isoform_handling = 'keep'
 add_full_length_region = 'all'
 READ_JUNC_MIN_MAP_LEN = 1
 multi_exon_region_weight = 'regular'

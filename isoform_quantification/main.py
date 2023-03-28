@@ -99,7 +99,7 @@ def parse_arguments():
     optional_EM.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_EM.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
     optional_EM.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
-    optional_EM.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
+    # optional_EM.add_argument('--same_struc_isoform_handling',type=str, default='keep',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
     optional_EM.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
     optional_EM.add_argument('--multi_exon_region_weight',type=str, default='regular',help="The weight in matrix A for multi_exon_region[default:regular][regular,minus_inner_region]")
     optional_EM.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix info [default:False] [True,False]")
@@ -120,7 +120,8 @@ def parse_arguments():
         args.filtering = True
     else:
         args.filtering = False
-    config.same_struc_isoform_handling = args.same_struc_isoform_handling
+    # config.same_struc_isoform_handling = args.same_struc_isoform_handling
+    config.same_struc_isoform_handling = 'keep'
     config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
     config.multi_exon_region_weight = args.multi_exon_region_weight
     config.sr_region_selection = args.sr_region_selection
