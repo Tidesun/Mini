@@ -15,6 +15,7 @@ import config
 import pickle
 from pathlib import Path
 import pandas as pd
+import shutil
 
 # from memory_profiler import profile
 # def parse_alignment_iteration(alignment_file_path,gene_points_dict,gene_interval_tree_dict, filtered_gene_regions_dict,
@@ -148,7 +149,6 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
             read_len_dict,read_len_dist_dict = get_read_len_dist(reads_isoform_info)
             with open(f'{output_path}/temp/LR_alignments/{worker_id}_{batch_id}','wb') as f:
                 pickle.dump([reads_isoform_info,read_len_dict,read_len_dist_dict,expression_dict,unique_mapping_expression_dict],f)
-
     return 
 # @profile
 # def get_aln_line_marker(alignment_file_path,threads):
@@ -220,6 +220,10 @@ def parse_alignment_EM(alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,thr
     # gene_regions_read_count,gene_regions_read_length,num_mapped_lines,gene_regions_read_pos = watcher.get()
     pool.close()
     pool.join()
+    try:
+        shutil.rmtree(f'{output_path}/temp/LR_alignments_dict/')
+    except:
+        pass
 
         
    

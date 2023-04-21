@@ -128,7 +128,8 @@ def EM_listener(watcher_args):
         #     print(Q.sum())
             print('bChange:')
             print(diff.max(),flush=True)
-            theta_df.to_csv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',sep='\t')
+            if i % 200 == 0:
+                theta_df.to_csv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',sep='\t')
 
         if diff[diff > min_diff].shape[0] == 0:
             print(f'Iteration:{i}')

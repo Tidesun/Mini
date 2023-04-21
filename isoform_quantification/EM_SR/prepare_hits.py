@@ -168,4 +168,8 @@ def prepare_hits(SR_sam,output_path,threads):
     theta_df,mean_f_len,std_f_len,eff_len_dict =  get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path)
     get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path)
     print('Done',flush=True)
+    try:
+        Path(alignment_file_path).unlink()
+    except:
+        pass
     return theta_df,eff_len_dict

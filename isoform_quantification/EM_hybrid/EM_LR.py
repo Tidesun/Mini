@@ -9,6 +9,7 @@ import numpy as np
 from pathlib import Path
 import gc
 import glob
+import shutil
 
 def get_isoform_df(isoform_len_df,expression_dict):
     theta_df = pd.Series(expression_dict) 
@@ -39,6 +40,11 @@ def prepare_LR(isoform_len_df,threads,output_path):
     gc.collect()
     Sm_dict = get_Sm_dict(read_len_dist,isoform_df)
     get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict)
+    try:
+        shutil.rmtree(f'{output_path}/temp/LR_alignments/')
+    except Exception as e:
+        print(e)
+        pass
     return theta_df,isoform_df
 # def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
 #     theta_df,isoform_df = prepare_LR(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice)

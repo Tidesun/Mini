@@ -6,6 +6,7 @@ import numpy as np
 import multiprocessing as mp
 import glob
 import config
+import shutil
 from EM_hybrid.cal_eff_len import get_eff_len_dict
 def dump_hits_dict(all_fragment_lengths,hits_dict,worker_id,batch_id,output_path):
     num_reads_dict = {}
@@ -200,4 +201,12 @@ def prepare_hits(SR_sam,output_path,threads):
     print('Get all hits dict done',flush=True)
     get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path)
     print('Done',flush=True)
+    try:
+        shutil.rmtree(f'{output_path}/temp/fragment_lengths/')
+    except:
+        pass
+    try:
+        Path(alignment_file_path).unlink()
+    except:
+        pass
     return theta_df,eff_len_dict
