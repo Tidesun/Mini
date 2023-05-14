@@ -70,8 +70,9 @@ def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions
                         unique_mapping_expression_dict[isoform] += 1
                     else:
                         num_isoforms = len(LR_gene_regions_dict[rname][gname][region])
-                        for isoform in LR_gene_regions_dict[rname][gname][region]:
-                            expression_dict[isoform] += 1/num_isoforms
+                        if config.inital_theta not in ['SR_unique','LR_unique','hybrid_unique']:
+                            for isoform in LR_gene_regions_dict[rname][gname][region]:
+                                expression_dict[isoform] += 1/num_isoforms
     return reads_isoform_info,expression_dict,unique_mapping_expression_dict
 def get_read_len_dist(reads_isoform_info):
     read_len_dict = {}
@@ -130,14 +131,16 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                         local_gene_regions_read_pos[rname][gname][region_name].append(mapping)
                     buffer_size += 1
             except Exception as e:
-                tb = traceback.format_exc()
-                print(Exception('Failed to on ' + line, tb))
+                # tb = traceback.format_exc()
+                # print(Exception('Failed to on ' + line, tb))
                 continue
             if buffer_size > max_buffer_size:
                 reads_isoform_info,expression_dict,unique_mapping_expression_dict = get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict)
                 read_len_dict,read_len_dist_dict = get_read_len_dist(reads_isoform_info)
-                with open(f'{output_path}/temp/LR_alignments/{worker_id}_{batch_id}','wb') as f:
-                    pickle.dump([reads_isoform_info,read_len_dict,read_len_dist_dict,expression_dict,unique_mapping_expression_dict],f)
+                with open(f'{output_path}/temp/LR_alignments/reads_{worker_id}_{batch_id}','wb') as f:
+                    pickle.dump([reads_isoform_info,read_len_dict],f)
+                with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
+                    pickle.dump([read_len_dist_dict,expression_dict],f)
                 batch_id += 1
                 del reads_isoform_info
                 del expression_dict
@@ -147,8 +150,10 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
         if buffer_size > 0:
             reads_isoform_info,expression_dict,unique_mapping_expression_dict =get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict)
             read_len_dict,read_len_dist_dict = get_read_len_dist(reads_isoform_info)
-            with open(f'{output_path}/temp/LR_alignments/{worker_id}_{batch_id}','wb') as f:
-                pickle.dump([reads_isoform_info,read_len_dict,read_len_dist_dict,expression_dict,unique_mapping_expression_dict],f)
+            with open(f'{output_path}/temp/LR_alignments/reads_{worker_id}_{batch_id}','wb') as f:
+                pickle.dump([reads_isoform_info,read_len_dict],f)
+            with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
+                pickle.dump([read_len_dist_dict,expression_dict],f)
     return 
 # @profile
 # def get_aln_line_marker(alignment_file_path,threads):

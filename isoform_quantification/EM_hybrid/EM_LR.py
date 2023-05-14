@@ -17,12 +17,12 @@ def get_isoform_df(isoform_len_df,expression_dict):
     isoform_df = pd.DataFrame({'isoform_len':isoform_len_df,'theta':theta_df})
     isoform_df = isoform_df.fillna(0)
     return isoform_df,theta_df
-def prepare_LR(isoform_len_df,threads,output_path):
+def prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,output_path):
     expression_dict = {}
     read_len_dist_dict = {}
-    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/*_*'):
+    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/dist_*_*'):
         with open(fpath,'rb') as f:
-            [_,_,new_read_len_dist_dict,new_expression_dict,_] = pickle.load(f)
+            [new_read_len_dist_dict,new_expression_dict] = pickle.load(f)
         for isoform in new_expression_dict:
             if isoform not in expression_dict:
                 expression_dict[isoform] = 0
@@ -39,13 +39,9 @@ def prepare_LR(isoform_len_df,threads,output_path):
     del expression_dict
     gc.collect()
     Sm_dict = get_Sm_dict(read_len_dist,isoform_df)
-    get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict)
-    try:
-        shutil.rmtree(f'{output_path}/temp/LR_alignments/')
-    except Exception as e:
-        print(e)
-        pass
-    return theta_df,isoform_df
+    num_batches_dict = get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict)
+    theta_arr = np.expand_dims(pd.concat([isoform_index_series, theta_df], axis=1).fillna(0).sort_values('Index')[0].values,axis=0)
+    return theta_arr,isoform_df,num_batches_dict
 # def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
 #     theta_df,isoform_df = prepare_LR(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice)
 #     final_theta_df = EM_algo(threads,theta_df,output_path)

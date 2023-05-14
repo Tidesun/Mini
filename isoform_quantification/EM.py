@@ -13,9 +13,12 @@ from EM_kde_libraries.EM_algo import EM_algo_kde_main
 from EM_kde_score_libraries.EM_algo import EM_algo_kde_score_main
 from EM_SR.EM_SR import EM_algo_SR
 from EM_hybrid.EM_hybrid import EM_algo_hybrid
+from EM_hybrid.EM_LR_alone import EM_algo_LR_alone
+
 import config
 from operator import itemgetter, attrgetter
 import pickle
+import shutil
 def infer_read_len(short_read_alignment_file_path):
     READ_LEN = 150
     sr_sam_valid = False
@@ -71,11 +74,11 @@ def map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,
     start_time = time.time()
     if multi_mapping_filtering == 'unique_only':
         pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
-        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-o',f'{output_path}/temp_lr.sorted.sam')
+        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-m','3G','-o',f'{output_path}/temp_lr.sorted.sam')
         long_read_alignment_file_path = f'{output_path}/temp_lr.sorted.sam'
     elif multi_mapping_filtering == 'best':
         pysam.view('-F','2820','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
-        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-o',f'{output_path}/temp_lr.sorted.sam')
+        pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-m','3G','-o',f'{output_path}/temp_lr.sorted.sam')
         long_read_alignment_file_path = f'{output_path}/temp_lr.sorted.sam'
     print(long_read_alignment_file_path)
     parse_alignment_EM(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST)
@@ -196,17 +199,24 @@ def EM_SR(short_read_alignment_file_path,output_path,threads):
     # print('Done in %.3f s'%(end_time-start_time),flush=True)
     pass
 def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
+    try:
+        shutil.rmtree(output_path)
+    except:
+        pass
     Path(output_path).mkdir(parents=True, exist_ok=True)
+    start_time = time.time()
     isoform_len_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
-    print(alpha)
     print('Preprocessing...',flush=True)
     print('Start quantification...',flush=True)
-    start_time = time.time()
-    EM_algo_hybrid(isoform_len_dict,short_read_alignment_file_path,output_path,threads,EM_choice)
+    if short_read_alignment_file_path is None:
+        EM_algo_LR_alone(isoform_len_dict,short_read_alignment_file_path,output_path,threads,EM_choice)
+    else:
+        EM_algo_hybrid(isoform_len_dict,short_read_alignment_file_path,output_path,threads,EM_choice)
     end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
     try:
         shutil.rmtree(f'{output_path}/temp/')
     except:
         pass
+    print('Done in %.3f s'%(end_time-start_time),flush=True)
+    
 

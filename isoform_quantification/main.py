@@ -113,7 +113,8 @@ def parse_arguments():
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
     optional_EM.add_argument('--EM_SR_num_iters',type=int, default=200,help="Number of EM SR iterations")
     optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
-    optional_EM.add_argument('--inital_theta',type=str, default='LR',help="inital_theta [LR,SR]")
+    optional_EM.add_argument('--inital_theta',type=str, default='LR',help="inital_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
+    optional_EM.add_argument('--inital_theta_eps',type=float, default=0.0,help="inital_theta eps [float]")
 
     args = parser.parse_args()
     if args.filtering == 'True':
@@ -239,6 +240,7 @@ def parse_arguments():
         if args.DL_model is None:
             args.DL_model = args.SR_quantification_option + '.pt'
         config.EM_SR_num_iters = args.EM_SR_num_iters
+        config.inital_theta_eps = args.inital_theta_eps
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option
             args.long_read_sam_path = None
@@ -249,7 +251,7 @@ def parse_arguments():
             config.inital_theta = args.inital_theta
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         elif args.EM_choice == 'hybrid':
-            args.alpha = 0.5
+            # args.alpha = 0.5
             config.alpha = args.alpha
             config.alpha_df_path = args.alpha_df_path
             config.inital_theta = args.inital_theta
