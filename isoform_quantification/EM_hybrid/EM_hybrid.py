@@ -64,17 +64,6 @@ def E_step_MT(args):
             queue.put(('SR',out_fpath,isoform_q_arr_SR.dtype, isoform_q_arr_SR.shape))
             queue.put('done')
     return
-<<<<<<< HEAD
-def M_step(isoform_q_df_SR,isoform_q_df_LR,isoform_df,alpha,alpha_df):
-    ss = isoform_df['eff_len'] / ((isoform_df['eff_len']*isoform_df['theta']).sum())
-    print(f'Using alpha == {alpha}')
-    if alpha_df is None:
-        new_theta_df = ((1-alpha) * isoform_q_df_SR + alpha * isoform_q_df_LR) / ((1-alpha) * isoform_q_df_SR.sum() * ss + alpha * isoform_q_df_LR.sum())
-    else:
-        new_theta_df = ((1-alpha_df) * isoform_q_df_SR + alpha_df * isoform_q_df_LR) / ((1-alpha_df) * isoform_q_df_SR.sum() * ss + alpha_df * isoform_q_df_LR.sum())
-    new_theta_df = new_theta_df/new_theta_df.sum()
-    return new_theta_df
-=======
 def M_step(isoform_q_arr_SR_all,isoform_q_arr_LR_all,theta_arr,eff_len_arr,alpha,alpha_df):
     ss = eff_len_arr / ((theta_arr * eff_len_arr).sum())
     # if alpha_df is None:
@@ -84,7 +73,6 @@ def M_step(isoform_q_arr_SR_all,isoform_q_arr_LR_all,theta_arr,eff_len_arr,alpha
     new_theta_arr = new_theta_arr/new_theta_arr.sum()
     new_theta_arr[new_theta_arr<1e-100] = 0
     return new_theta_arr
->>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
 def EM_listener(watcher_args):
     threads,eff_len_arr,theta_arr,output_path,queue,all_pipes,output_df = watcher_args
     min_diff = 1e-3

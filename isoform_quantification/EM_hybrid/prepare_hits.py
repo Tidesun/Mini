@@ -7,15 +7,11 @@ import multiprocessing as mp
 import glob
 import config
 import shutil
-<<<<<<< HEAD
-
-=======
 import scipy
 import scipy.sparse
 import datetime
 import time
 from EM_hybrid.util import convert_dict_to_sparse_matrix,safe_divide_sparse
->>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
 from EM_hybrid.cal_eff_len import get_eff_len_dict
 def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_index,isoform_index_dict,output_path,theta_matrix):
 # def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_index,isoform_index_dict,output_path,theta_matrix,frag_len_sum,frag_len_squared_sum,num_frag_len):

@@ -39,14 +39,9 @@ def prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,ou
     del expression_dict
     gc.collect()
     Sm_dict = get_Sm_dict(read_len_dist,isoform_df)
-<<<<<<< HEAD
-    get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict)
-    return theta_df,isoform_df
-=======
     num_batches_dict = get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict)
     theta_arr = np.expand_dims(pd.concat([isoform_index_series, theta_df], axis=1).fillna(0).sort_values('Index')[0].values,axis=0)
     return theta_arr,isoform_df,num_batches_dict
->>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
 # def EM_algo_main(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice):
 #     theta_df,isoform_df = prepare_LR(isoform_len_dict,isoform_exon_dict,strand_dict,gene_regions_read_mapping,LR_gene_regions_dict,threads,output_path,EM_choice)
 #     final_theta_df = EM_algo(threads,theta_df,output_path)

@@ -65,20 +65,6 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
                     cond_prob /= isoform_len - read_len + 1
                 else:
                     cond_prob = 0
-<<<<<<< HEAD
-                all_reads_isoform_cond_prob[read][isoform] = cond_prob
-        rows = []
-        MIN_PROB = 1e-100
-        for read in all_reads_isoform_cond_prob:
-            for isoform,prob in all_reads_isoform_cond_prob[read].items():
-                rows.append([read,isoform,prob])
-        cond_prob_df = pd.DataFrame(rows,columns=['read','isoform','cond_prob']).set_index(['read','isoform'])
-        cond_prob_df.loc[(cond_prob_df['cond_prob'] == MIN_PROB) | (cond_prob_df['cond_prob'] == np.float('inf')),'cond_prob'] = 0
-        Path(f'{output_path}/temp/cond_prob/').mkdir(exist_ok=True,parents=True)
-        with open(f'{output_path}/temp/cond_prob/{worker_id}_{batch_id}','wb') as f:
-            pickle.dump(cond_prob_df,f)
-    print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
-=======
                 if isoform in isoform_index_dict:
                     isoform_index = isoform_index_dict[isoform]
                     if cond_prob == np.float('inf') or cond_prob <= MIN_PROB:
@@ -92,7 +78,6 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
     scipy.sparse.save_npz(f'{output_path}/temp/cond_prob/{worker_id}_cond_prob.npz',cond_prob_matrix)
     print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
     return {worker_id:num_batches}
->>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
 #     return all_reads_isoform_cond_prob
 def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict):
     pool = mp.Pool(threads)
@@ -106,10 +91,7 @@ def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_
         num_batches_dict.update(num_batch)
     pool.close()
     pool.join()
-<<<<<<< HEAD
-=======
     return num_batches_dict
->>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
     try:
         shutil.rmtree(f'{output_path}/temp/LR_alignments/')
     except Exception as e:
