@@ -329,8 +329,10 @@ def parse_alignment(alignment_file_path,READ_JUNC_MIN_MAP_LEN,gene_points_dict,g
                 for region in gene_regions_read_count[rname][gname].copy():
                     if gene_regions_read_count[rname][gname][region] == 0:
                         if config.sr_region_selection == 'real_data':
-                            if config.keep_sr_exon_region:
-                                if check_region_type(region) != 'one_exon':
+                            if config.keep_sr_exon_region == 'nonfullrank':
+                                pass
+                            elif config.keep_sr_exon_region == 'all':
+                                if check_region_type(region) not in ['one_exon','two_exons','exons']:
                                     del gene_regions_read_count[rname][gname][region]
                             else:
                                 del gene_regions_read_count[rname][gname][region]
