@@ -4,6 +4,9 @@ from pathlib import Path
 import multiprocessing as mp
 import numpy as np
 import glob
+import scipy
+import scipy.sparse
+from EM_hybrid.util import convert_dict_to_sparse_matrix
 def get_cdf(read_len_dist,l):
     return read_len_dist.loc[read_len_dist.index<l,'PDF'].sum()/read_len_dist['PDF'].sum()
 def get_Sm_dict(read_len_dist,isoform_df):
@@ -35,14 +38,19 @@ def get_Sm_dict(read_len_dist,isoform_df):
         previous_read_len = read_len
     return Sm_dict
 def get_all_reads_isoform_cond_prob_LIQA_modified(args):
-    worker_id,output_path,isoform_df,read_len_dist,Sm_dict = args
-    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/{worker_id}_*'):
+    worker_id,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict = args
+    MIN_PROB = 1e-100
+    num_batches = 0
+    all_cond_prob_matrix = []
+    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/reads_{worker_id}_*'):
         batch_id = fpath.split('/')[-1].split('_')[-1]
         with open(fpath,'rb') as f:
-            [reads_isoform_info,read_len_dict,_,_,_] = pickle.load(f)
+            [reads_isoform_info,read_len_dict] = pickle.load(f)
         all_reads_isoform_cond_prob = {}
+        read_index = 0
         for read in reads_isoform_info:
-            all_reads_isoform_cond_prob[read] = {}
+            if len(reads_isoform_info[read]) != 0:
+                read_index += 1
             read_len = read_len_dict[read]
             for isoform in reads_isoform_info[read]:
                 isoform_len = isoform_df.loc[isoform,'isoform_len']
@@ -57,6 +65,7 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
                     cond_prob /= isoform_len - read_len + 1
                 else:
                     cond_prob = 0
+<<<<<<< HEAD
                 all_reads_isoform_cond_prob[read][isoform] = cond_prob
         rows = []
         MIN_PROB = 1e-100
@@ -69,17 +78,38 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
         with open(f'{output_path}/temp/cond_prob/{worker_id}_{batch_id}','wb') as f:
             pickle.dump(cond_prob_df,f)
     print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
+=======
+                if isoform in isoform_index_dict:
+                    isoform_index = isoform_index_dict[isoform]
+                    if cond_prob == np.float('inf') or cond_prob <= MIN_PROB:
+                        cond_prob = 0
+                    all_reads_isoform_cond_prob[read_index,isoform_index] = cond_prob
+        worker_cond_prob_matrix = convert_dict_to_sparse_matrix(all_reads_isoform_cond_prob,read_index+1,len(isoform_index_dict))
+        all_cond_prob_matrix.append(worker_cond_prob_matrix)
+        num_batches += 1
+    cond_prob_matrix = scipy.sparse.vstack(all_cond_prob_matrix)
+    Path(f'{output_path}/temp/cond_prob/').mkdir(exist_ok=True,parents=True)
+    scipy.sparse.save_npz(f'{output_path}/temp/cond_prob/{worker_id}_cond_prob.npz',cond_prob_matrix)
+    print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
+    return {worker_id:num_batches}
+>>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
 #     return all_reads_isoform_cond_prob
-def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict):
+def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict):
     pool = mp.Pool(threads)
     futures = []
     for worker_id in range(threads):
-        args = worker_id,output_path,isoform_df,read_len_dist,Sm_dict
+        args = worker_id,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict
         futures.append(pool.apply_async(get_all_reads_isoform_cond_prob_LIQA_modified,(args,)))
+    num_batches_dict = {}
     for future in futures:
-        future.get()
+        num_batch = future.get()
+        num_batches_dict.update(num_batch)
     pool.close()
     pool.join()
+<<<<<<< HEAD
+=======
+    return num_batches_dict
+>>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
     try:
         shutil.rmtree(f'{output_path}/temp/LR_alignments/')
     except Exception as e:

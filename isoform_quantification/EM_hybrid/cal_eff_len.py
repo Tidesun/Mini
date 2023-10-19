@@ -18,7 +18,11 @@ def get_eff_len_rsem(isoform_len, fraglen, fragsd):
     denominator = exp_term / (fragsd*sqrt_2pi)
     eff_len = np.sum(numerator) / np.sum(denominator)
     return max(eff_len, 1)
+<<<<<<< HEAD
 def get_eff_len_dict(SR_sam,mean_f_len,std_f_len,option='Kallisto'):
+=======
+def get_eff_len_dict(SR_sam,mean_f_len,std_f_len,isoform_index_dict,option='Kallisto'):
+>>>>>>> 24929069bf9997b145e21733b499aeb1f08cef25
     eff_len_dict = {}
     with pysam.AlignmentFile(SR_sam, "r") as f:
         for isoform,isoform_len in zip(f.references,f.lengths):
@@ -28,4 +32,9 @@ def get_eff_len_dict(SR_sam,mean_f_len,std_f_len,option='Kallisto'):
                 eff_len_dict[isoform] = get_eff_len_kallisto(isoform_len,mean_f_len,std_f_len)
             elif option == 'RSEM':
                 eff_len_dict[isoform] = get_eff_len_rsem(isoform_len,mean_f_len,std_f_len)
-    return eff_len_dict
+    eff_len_arr = np.ones((len(isoform_index_dict)))
+    for isoform,index in isoform_index_dict.items():
+        if isoform in eff_len_dict:
+            eff_len_arr[index] = eff_len_dict[isoform]
+
+    return eff_len_arr

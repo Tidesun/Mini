@@ -159,7 +159,7 @@ def get_ant_all_workers(eff_len_dict,mean_f_len,std_f_len,threads,output_path):
 def prepare_hits(SR_sam,output_path,threads):
     Path(f'{output_path}/temp/').mkdir(exist_ok=True,parents=True)
     print('Sorting sam file by read name...',flush=True)
-    pysam.sort(SR_sam,'-n','-@',str(threads),'-o',f'{output_path}/temp/SR.sam')
+    pysam.collate(SR_sam,'-@',str(threads),'-o',f'{output_path}/temp/SR.sam')
     alignment_file_path = f'{output_path}/temp/SR.sam'
     print('Done',flush=True)
     print('Getting short reads info...',flush=True)
