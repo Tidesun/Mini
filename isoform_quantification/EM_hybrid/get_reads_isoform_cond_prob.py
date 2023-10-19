@@ -68,6 +68,7 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
         Path(f'{output_path}/temp/cond_prob/').mkdir(exist_ok=True,parents=True)
         with open(f'{output_path}/temp/cond_prob/{worker_id}_{batch_id}','wb') as f:
             pickle.dump(cond_prob_df,f)
+    print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
 #     return all_reads_isoform_cond_prob
 def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,Sm_dict):
     pool = mp.Pool(threads)
@@ -79,3 +80,7 @@ def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,read_len_dist,
         future.get()
     pool.close()
     pool.join()
+    try:
+        shutil.rmtree(f'{output_path}/temp/LR_alignments/')
+    except Exception as e:
+        pass

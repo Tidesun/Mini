@@ -67,6 +67,7 @@ def E_step_MT(args):
     return
 def M_step(isoform_q_df_SR,isoform_q_df_LR,isoform_df,alpha,alpha_df):
     ss = isoform_df['eff_len'] / ((isoform_df['eff_len']*isoform_df['theta']).sum())
+    print(f'Using alpha == {alpha}')
     if alpha_df is None:
         new_theta_df = ((1-alpha) * isoform_q_df_SR + alpha * isoform_q_df_LR) / ((1-alpha) * isoform_q_df_SR.sum() * ss + alpha * isoform_q_df_LR.sum())
     else:
@@ -171,11 +172,11 @@ def EM_manager(threads,eff_len_dict,theta_df,output_path):
 def EM_algo_hybrid(isoform_len_dict,SR_sam,output_path,threads,EM_choice):
     isoform_len_df = pd.Series(isoform_len_dict)
     eff_len_dict = isoform_len_dict
+    theta_SR_df,eff_len_dict = prepare_hits(SR_sam,output_path,threads)
+    theta_LR_df,_ = prepare_LR(isoform_len_df,threads,output_path)
     if config.inital_theta == 'SR':
-        theta_SR_df,eff_len_dict = prepare_hits(SR_sam,output_path,threads)
         theta_df = theta_SR_df
     elif config.inital_theta == 'LR':
-        theta_LR_df,_ = prepare_LR(isoform_len_df,threads,output_path)
         theta_df = theta_LR_df
     print('Using {} as initial theta'.format(config.inital_theta))
     Path(f'{output_path}/EM_iterations/').mkdir(exist_ok=True,parents=True)
