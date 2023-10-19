@@ -10,10 +10,11 @@ from pathlib import Path
 import gc
 import glob
 import shutil
+import config
 
 def get_isoform_df(isoform_len_df,expression_dict):
     theta_df = pd.Series(expression_dict) 
-    theta_df = theta_df/theta_df.sum()
+    # theta_df = theta_df/theta_df.sum()
     isoform_df = pd.DataFrame({'isoform_len':isoform_len_df,'theta':theta_df})
     isoform_df = isoform_df.fillna(0)
     return isoform_df,theta_df
@@ -39,6 +40,11 @@ def prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,ou
     del expression_dict
     gc.collect()
     Sm_dict = get_Sm_dict(read_len_dist,isoform_df)
+    with open(f'{output_path}/read_len_dist_sm_dict','wb') as f:
+        pickle.dump([read_len_dist,Sm_dict],f)
+    if config.read_len_dist_sm_dict_path is not None:
+        with open(config.read_len_dist_sm_dict_path,'rb') as f:
+            [read_len_dist,Sm_dict] = pickle.load(f)
     num_batches_dict = get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict)
     theta_arr = np.expand_dims(pd.concat([isoform_index_series, theta_df], axis=1).fillna(0).sort_values('Index')[0].values,axis=0)
     return theta_arr,isoform_df,num_batches_dict

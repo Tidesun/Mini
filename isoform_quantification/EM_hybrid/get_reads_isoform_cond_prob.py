@@ -6,6 +6,7 @@ import numpy as np
 import glob
 import scipy
 import scipy.sparse
+import config
 from EM_hybrid.util import convert_dict_to_sparse_matrix
 def get_cdf(read_len_dist,l):
     return read_len_dist.loc[read_len_dist.index<l,'PDF'].sum()/read_len_dist['PDF'].sum()
@@ -42,7 +43,7 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
     MIN_PROB = 1e-100
     num_batches = 0
     all_cond_prob_matrix = []
-    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/reads_{worker_id}_*'):
+    for fpath in sorted(glob.glob(f'{output_path}/temp/LR_alignments/reads_{worker_id}_*')):
         batch_id = fpath.split('/')[-1].split('_')[-1]
         with open(fpath,'rb') as f:
             [reads_isoform_info,read_len_dict] = pickle.load(f)
@@ -60,7 +61,10 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
                 if cdf == 0 or Sm == 0:
                     cond_prob = pdf
                 else:
-                    cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1)) / Sm_dict[read_len]
+                    if config.LR_cond_prob_calc == 'form_1':
+                        cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1)) / Sm_dict[read_len]
+                    elif config.LR_cond_prob_calc == 'form_2':
+                        cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1))
                 if isoform_len - read_len + 1 != 0:
                     cond_prob /= isoform_len - read_len + 1
                 else:

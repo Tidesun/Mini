@@ -5,6 +5,7 @@ from operator import itemgetter, attrgetter
 import bisect
 import traceback
 from util import sync_reference_name
+import config
 # from memory_profiler import profile
 # valid_cigar = set("0123456789MNID")
 read_len_margin = 0
@@ -164,8 +165,8 @@ def compute_overlapped_length(region_dict,seg_start,seg_end):
 
 ##########
 def map_read_to_region(read_start_pos,read_len_list,points_dict,gene_interval_tree,gene_region_dict,read_name,READ_JUNC_MIN_MAP_LEN):
-    tolerance = 20
-    junc_tolerance = 5
+    tolerance = config.isoform_start_end_site_tolerance
+    junc_tolerance = config.junction_site_tolerance
     read_segments = []
     curr_pos = read_start_pos
     for i in range(len(read_len_list)):
@@ -326,6 +327,7 @@ def map_read(gene_points_dict,gene_interval_tree_dict,gene_regions_dict,
     best_mapped_region_length = 1
     best_regions = []
     best_genes = []
+    gene_candidates = sorted(list(gene_candidates))
     for gname in gene_candidates:
         points_dict = gene_points_dict[rname][gname]
         gene_interval_tree = gene_interval_tree_dict[rname][gname]

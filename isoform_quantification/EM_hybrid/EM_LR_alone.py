@@ -104,16 +104,15 @@ def EM_listener(watcher_args):
         diff = np.abs(theta_arr[new_theta_arr>1e-7] - new_theta_arr[new_theta_arr>1e-7])/new_theta_arr[new_theta_arr>1e-7]
         # diff = diff[new_theta_arr>1e-7]
         # diff[(new_theta_arr==0).flatten()] = 0
-        if i % 50 == 0:
+        if i % config.EM_output_frequency == 0:
             print(f'Iteration:{i}')
             print(datetime.datetime.now())
         #     print('Sum:')
         #     print(Q.sum())
             print('bChange:')
             print(diff.max(),flush=True)
-            if i % 100 == 0:
-                TPM_arr = (new_theta_arr.flatten()/new_theta_arr.flatten().sum())*1e6
-                write_result_to_tsv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',output_df,TPM_arr)
+            TPM_arr = (new_theta_arr.flatten()/new_theta_arr.flatten().sum())*1e6
+            write_result_to_tsv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',output_df,TPM_arr)
             #     theta_df.to_csv(f'{output_path}/EM_iterations/Iter_{i}_theta.tsv',sep='\t')
 
         if diff[diff > min_diff].shape[0] == 0:
@@ -177,15 +176,28 @@ def EM_algo_LR_alone(isoform_len_dict,SR_sam,output_path,threads,EM_choice):
     eff_len_arr = isoform_len_arr.copy()
     output_df['Effective_length'] = eff_len_arr
     theta_LR_arr,_,LR_num_batches_dict = prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,output_path)
-    theta_LR_arr += config.inital_theta_eps
-    theta_LR_arr /= theta_LR_arr.sum()
+    num_LRs = theta_LR_arr.sum()
+    print(f'Number of LRs:{num_LRs}')
+    print(f'Pseudo_count_LR:'+str(config.pseudo_count_LR),flush=True)
+    if config.eps_strategy == 'add_eps_small':
+        theta_LR_arr[theta_LR_arr<config.inital_theta_eps] += config.pseudo_count_LR
+    elif config.eps_strategy == 'add_eps':
+        theta_LR_arr += config.pseudo_count_LR
+    theta_LR_arr = theta_LR_arr / theta_LR_arr.sum()
     if config.inital_theta in ['LR','LR_unique']:
         theta_arr = theta_LR_arr
     elif config.inital_theta == 'uniform':
         theta_arr = np.ones(shape=theta_LR_arr.shape)
         theta_arr = theta_arr/theta_arr.sum()
     elif config.inital_theta == 'random':
-        theta_arr = np.random.dirichlet(np.ones(shape=theta_LR_arr.flatten().shape)) + config.inital_theta_eps
+        theta_arr = np.random.dirichlet(np.ones(shape=theta_LR_arr.flatten().shape))
+        if config.eps_strategy == 'add_eps_small':
+            count_arr = theta_arr * num_LRs
+            count_arr[theta_arr<config.inital_theta_eps] += config.pseudo_count_LR
+            theta_arr = count_arr
+        elif config.eps_strategy == 'add_eps':
+            theta_arr = theta_arr * num_LRs
+            theta_arr += config.inital_theta_eps
         theta_arr = np.expand_dims(theta_arr,0)
         theta_arr = theta_arr/theta_arr.sum()
     np.savez_compressed(f'{output_path}/initial_theta',theta=theta_arr)

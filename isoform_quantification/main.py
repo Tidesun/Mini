@@ -112,10 +112,15 @@ def parse_arguments():
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
     optional_EM.add_argument('--EM_SR_num_iters',type=int, default=200,help="Number of EM SR iterations")
+    optional_EM.add_argument('--EM_output_frequency',type=int, default=200,help="Frequency(in itertations) of outputting EM results")
     optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
     optional_EM.add_argument('--inital_theta',type=str, default='LR',help="inital_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
     optional_EM.add_argument('--inital_theta_eps',type=float, default=0.0,help="inital_theta eps [float]")
-
+    optional_EM.add_argument('--eps_strategy',type=str, default='add_eps_small',help="how to add inital_theta eps [add_eps_all,add_eps_small]. (add_eps_small: add isoform with theta < eps with eps. add_eps: add eps to all isoforms)")
+    optional_EM.add_argument('--isoform_start_end_site_tolerance',type=int, default=20,help="Isoform Start and end site tolerance for mapping long reads")
+    optional_EM.add_argument('--junction_site_tolerance',type=int, default=5,help="Junction site tolerance for mapping long reads")
+    optional_EM.add_argument('--read_len_dist_sm_dict_path',type=str, default=None,help="The path of read length distribution for long reads")
+    optional_EM.add_argument('--LR_cond_prob_calc',type=str, default='form_2',help="How to calculate LR length distribution [form_1,form_2]")
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
@@ -241,6 +246,12 @@ def parse_arguments():
             args.DL_model = args.SR_quantification_option + '.pt'
         config.EM_SR_num_iters = args.EM_SR_num_iters
         config.inital_theta_eps = args.inital_theta_eps
+        config.EM_output_frequency = args.EM_output_frequency
+        config.isoform_start_end_site_tolerance = args.isoform_start_end_site_tolerance
+        config.junction_site_tolerance = args.junction_site_tolerance
+        config.eps_strategy = args.eps_strategy
+        config.read_len_dist_sm_dict_path = args.read_len_dist_sm_dict_path
+        config.LR_cond_prob_calc = args.LR_cond_prob_calc
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option
             args.long_read_sam_path = None

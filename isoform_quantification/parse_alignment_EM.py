@@ -78,12 +78,15 @@ def get_read_len_dist(reads_isoform_info):
     read_len_dict = {}
     read_len_dist_dict = {}
     for read in reads_isoform_info:
-        [isoform_len,f_end,t_end] = next(iter(reads_isoform_info[read].values()))
-        read_len = isoform_len -  f_end - t_end
-        read_len_dict[read] = read_len
-        if read_len not in read_len_dist_dict:
-            read_len_dist_dict[read_len] = 0
-        read_len_dist_dict[read_len] += 1
+        max_read_len  = 0
+        for isoform,[isoform_len,f_end,t_end] in reads_isoform_info[read].items():
+            read_len = isoform_len -  f_end - t_end
+            if read_len > max_read_len:
+                max_read_len = read_len
+        read_len_dict[read] = max_read_len
+        if max_read_len not in read_len_dist_dict:
+            read_len_dist_dict[max_read_len] = 0
+        read_len_dist_dict[max_read_len] += 1
     # read_len_dist = pd.Series(read_len_dist_dict).to_frame()
     # read_len_dist.columns = ['PDF']
     # read_len_dist = read_len_dist.sort_index(ascending=True)
@@ -102,7 +105,7 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
         buffer_size = 0
         while True:
             line = aln_file.readline()
-            if aln_file.tell() >= end_file_pos:
+            if aln_file.tell() > end_file_pos or not line:
                 break
             try:
                 if line[0] == '@':
@@ -119,7 +122,8 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                     start_pos_list, start_gname_list, end_pos_list, end_gname_list,
                     READ_JUNC_MIN_MAP_LEN, CHR_LIST,aln_line)
                 if (mapping['read_mapped']):
-                    for mapping_area in [random.choice(mapping['mapping_area'])]:
+                    # random.seed(mapping['read_name'])
+                    for mapping_area in mapping['mapping_area']:
                         rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
                         if rname not in local_gene_regions_read_pos:
                             local_gene_regions_read_pos[rname] = {}

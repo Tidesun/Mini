@@ -84,12 +84,10 @@ def get_hits_dict(args):
                     isoform_name = read.reference_name
                 if isoform_name not in isoform_index_dict:
                     continue
-
-                
                 if previous_read_name is None:
                     previous_read_name = read.query_name
                 elif previous_read_name != read.query_name:
-                    if f.tell() >= end_pos:
+                    if f.tell() > end_pos:
                         break
                     read_index += 1
                     previous_read_name = read.query_name
@@ -208,9 +206,14 @@ def get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isofor
     std_f_len = all_frag_len_arr.std()
     print(f'STD_F_LEN:{std_f_len}')
     print(f'MEAN_F_LEN:{mean_f_len}')
+    if config.mean_f_len is not None:
+        mean_f_len = config.mean_f_len
+    if config.std_f_len is not None:
+        std_f_len = config.std_f_len
     eff_len_arr = get_eff_len_dict(alignment_file_path,mean_f_len,std_f_len,isoform_index_dict,config.eff_len_option)
-    theta_arr /= eff_len_arr
-    theta_arr /= theta_arr.sum()
+    theta_arr = theta_arr/eff_len_arr
+    config.pseudo_count_SR = 1/eff_len_arr.max()
+    # theta_arr /= theta_arr.sum()
     # watcher_pool.close()
     # watcher_pool.join()
     return theta_arr,mean_f_len,std_f_len,eff_len_arr,num_batches_dict
