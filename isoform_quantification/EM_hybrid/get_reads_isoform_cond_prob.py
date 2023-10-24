@@ -71,7 +71,7 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
                     cond_prob = 0
                 if isoform in isoform_index_dict:
                     isoform_index = isoform_index_dict[isoform]
-                    if cond_prob == np.float('inf') or cond_prob <= MIN_PROB:
+                    if cond_prob == float('inf') or cond_prob <= MIN_PROB:
                         cond_prob = 0
                     all_reads_isoform_cond_prob[read_index,isoform_index] = cond_prob
         worker_cond_prob_matrix = convert_dict_to_sparse_matrix(all_reads_isoform_cond_prob,read_index+1,len(isoform_index_dict))

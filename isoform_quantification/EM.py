@@ -45,7 +45,7 @@ def parse(ref_file_path, READ_JUNC_MIN_MAP_LEN, short_read_alignment_file_path, 
     output_path =  config.output_path
     with open(f'{output_path}/temp/machine_learning/temp_LR_alignments_dict.pkl','wb') as f:
         pickle.dump([gene_isoforms_dict,LR_gene_regions_dict, LR_genes_regions_len_dict, gene_isoforms_length_dict, raw_isoform_exons_dict],f)
-    print('Start calculating K-value...')
+    print('Start calculating K-value...',flush=True)
     start_time = time.time()
     short_read_gene_matrix_dict = calculate_all_condition_number(gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,150,allow_multi_exons=False) 
     SR_kvalue_dict = {}
@@ -225,6 +225,7 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
     print('Preprocessing...',flush=True)
     start_time = time.time()
     isoform_len_dict,isoform_gene_dict,gene_isoforms_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
+    end_time = time.time()
     print('Done in %.3f s'%(end_time-start_time),flush=True)
     print('Start quantification...',flush=True)
     start_time = time.time()

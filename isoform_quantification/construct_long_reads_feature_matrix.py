@@ -127,7 +127,7 @@ def generate_all_feature_matrix_long_read(gene_isoforms_dict,gene_regions_dict,g
             try:
                 matrix_dict['condition_number']  = get_condition_number(matrix_dict['isoform_region_matrix'])
             except:
-                matrix_dict['condition_number'] = (np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'))
+                matrix_dict['condition_number'] = (float('nan'),float('nan'),float('nan'),float('nan'))
                 # print(long_reads_isoform_region_weight_matrix_dict[chr_name][gene_name])
                 # with open('/fs/project/PCON0009/Au-scratch2/haoran/TrEESR/test.pkl','wb') as f:
                 #     pickle.dump([matrix_dict, gene_regions_dict[chr_name][gene_name],gene_regions_read_count[chr_name][gene_name],chr_name,gene_name],f)

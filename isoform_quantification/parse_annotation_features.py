@@ -3,7 +3,7 @@ import scipy.stats
 import pickle
 def get_stats(arr):
     if len(arr) == 0:
-        return np.array([np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan')])
+        return np.array([float('nan'),float('nan'),float('nan'),float('nan'),float('nan'),float('nan')])
     s = scipy.stats.describe(arr)
     return np.array([s.minmax[0],s.minmax[1],s.mean,s.variance,s.skewness,s.kurtosis])
 def mergeIntervals(intervals):

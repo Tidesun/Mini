@@ -8,7 +8,7 @@ import scipy.stats
 
 def get_stats(arr):
     if len(arr) == 0:
-        return np.array([np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan')])
+        return np.array([float('nan'),float('nan'),float('nan'),float('nan'),float('nan'),float('nan')])
     s = scipy.stats.describe(arr)
     return np.array([s.minmax[0],s.minmax[1],s.mean,s.variance,s.skewness,s.kurtosis])
 def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict):
@@ -44,7 +44,7 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
     with open(output_path+"/SR_singular_values.out",'w') as f:
         f.write('Gene\tSingular_values\n')
         for (gname,rname) in list_of_all_genes_chrs:
-            svalues = ','.join(list(short_read_gene_matrix_dict[rname][gname]['singular_values']))
+            svalues = ','.join([str(v) for v in short_read_gene_matrix_dict[rname][gname]['singular_values']])
             f.write('{}\t{}\n'.format(gname,svalues))
         for chr_name in removed_gene_isoform_dict:
             for gene_name in removed_gene_isoform_dict[chr_name]:
@@ -52,8 +52,8 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
     with open(output_path+"/LR_singular_values.out",'w') as f:
         f.write('Gene\tSingular_values\n')
         for (gname,rname) in list_of_all_genes_chrs:
-            svalues = ','.join(list(long_read_gene_matrix_dict[rname][gname]['singular_values']))
-            f.write('{}\t{}\n'.format(gname,long_read_gene_matrix_dict[rname][gname]['singular_values']))
+            svalues = ','.join([str(v) for v in long_read_gene_matrix_dict[rname][gname]['singular_values']])
+            f.write('{}\t{}\n'.format(gname,svalues))
         for chr_name in removed_gene_isoform_dict:
             for gene_name in removed_gene_isoform_dict[chr_name]:
                 f.write('{}\tNA\n'.format(gene_name))

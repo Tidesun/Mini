@@ -15,7 +15,7 @@ from EM_hybrid.util import convert_dict_to_sparse_matrix,safe_divide_sparse
 from EM_hybrid.cal_eff_len import get_eff_len_dict
 def get_stats(arr):
     if len(arr) == 0:
-        return np.array([np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan')])
+        return np.array([float('nan'),float('nan'),float('nan'),float('nan'),float('nan'),float('nan')])
     s = scipy.stats.describe(arr)
     return np.array([s.minmax[0],s.minmax[1],s.mean,s.variance,s.skewness,s.kurtosis])
 def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_index,isoform_index_dict,output_path,theta_matrix):

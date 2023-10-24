@@ -121,7 +121,7 @@ def calculate_condition_number(region_isoform_dict,isoform_names,normalize_A):
         # print(isoform_region_matrix)
         # print(region_names_indics)
         # print(isoform_names_indics)
-        condition_numbers = (np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'))
+        condition_numbers = (float('nan'),float('nan'),float('nan'),float('nan'))
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
                    'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics,'singular_values':scipy.linalg.svdvals(isoform_region_matrix)}
     return matrix_dict
