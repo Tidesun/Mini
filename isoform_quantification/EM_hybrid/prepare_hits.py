@@ -13,6 +13,11 @@ import datetime
 import time
 from EM_hybrid.util import convert_dict_to_sparse_matrix,safe_divide_sparse
 from EM_hybrid.cal_eff_len import get_eff_len_dict
+def get_stats(arr):
+    if len(arr) == 0:
+        return np.array([np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan')])
+    s = scipy.stats.describe(arr)
+    return np.array([s.minmax[0],s.minmax[1],s.mean,s.variance,s.skewness,s.kurtosis])
 def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_index,isoform_index_dict,output_path,theta_matrix):
 # def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_index,isoform_index_dict,output_path,theta_matrix,frag_len_sum,frag_len_squared_sum,num_frag_len):
     # st = time.time()
@@ -60,7 +65,7 @@ def dump_hits_dict(all_fragment_lengths,frag_len_dict,worker_id,batch_id,read_in
     # ,all_fragment_lengths_arr,frag_len_sum,frag_len_squared_sum,num_frag_len,[time1,time2,time3]
 def get_hits_dict(args):
     os.nice(10)
-    worker_id,alignment_file_path,start_pos,end_pos,output_path,queue,isoform_index_dict = args
+    worker_id,alignment_file_path,start_pos,end_pos,output_path,queue,isoform_index_dict,gene_isoform_index = args
     frag_len_dict = {}
     read_index = 0
     all_fragment_lengths = []
@@ -84,6 +89,8 @@ def get_hits_dict(args):
                     isoform_name = read.reference_name
                 if isoform_name not in isoform_index_dict:
                     continue
+
+                
                 if previous_read_name is None:
                     previous_read_name = read.query_name
                 elif previous_read_name != read.query_name:
@@ -128,6 +135,17 @@ def get_hits_dict(args):
     frag_len_matrix_path = f'{output_path}/temp/hits_dict/{worker_id}_frag_len.npz'
     scipy.sparse.save_npz(frag_len_matrix_path,frag_len_matrix)
 
+    hits_matrix = frag_len_matrix.sign()
+    hits_matrix_sum = np.array(hits_matrix.sum(axis=1))[:,0]
+    unique_mapping_mask = (hits_matrix_sum == 1)
+    multi_mapping_mask = (hits_matrix_sum != 1)
+    frag_len_matrix_csc = scipy.sparse.csc_matrix(frag_len_matrix)
+    SR_feature_dict = {}
+    for gname,isoform_index in gene_isoform_index.items():
+        frag_len_matrix_csr = scipy.sparse.csr_matrix(frag_len_matrix_csc[:,isoform_index])
+        SR_feature_dict[gname] = {'unique_mapping':frag_len_matrix_csr[unique_mapping_mask].data,'multi_mapping':frag_len_matrix_csr[multi_mapping_mask].data}
+    with open(f'{output_path}/temp/machine_learning/SR_feature_dict_{worker_id}','wb') as f:
+        pickle.dump(SR_feature_dict,f)
     # print(f'Get_hits_dict: Worker {worker_id} done with {batch_id} batches!')
     # print(datetime.datetime.now(),flush=True)
     # print(times,flush=True)
@@ -169,7 +187,7 @@ def get_aln_line_marker(alignment_file_path,threads):
             byte_marker.append(start_offset)
     byte_marker.append(total_bytes)
     return byte_marker
-def get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isoform_index_dict):
+def get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isoform_index_dict,gene_isoform_index):
     # watcher_pool = mp.Pool(1)
     worker_pool = mp.Pool(threads)
     manager = mp.Manager()
@@ -180,7 +198,7 @@ def get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isofor
     num_batches_dict = {}
     for i in range(threads):
         start_pos,end_os = byte_marker[i],byte_marker[i+1]
-        args = i,alignment_file_path,start_pos,end_os,output_path,queue,isoform_index_dict
+        args = i,alignment_file_path,start_pos,end_os,output_path,queue,isoform_index_dict,gene_isoform_index
         futures.append(worker_pool.apply_async(get_hits_dict,(args,)))
     theta_arr = None
     for future in futures:
@@ -225,10 +243,10 @@ def get_all_ant(args):
     ANT_matrix = scipy.sparse.csr_matrix(frag_len_matrix,dtype=float)
     ANT_matrix.data[:] = 1/(std_f_len * np.sqrt(np.pi)) * np.e**(-1/2*((ANT_matrix.data-mean_f_len)/std_f_len)**2)
     ANT_matrix = safe_divide_sparse(ANT_matrix,eff_len_arr)
-    try:
-        Path(frag_len_matrix_path).unlink()
-    except:
-        pass
+    # try:
+    #     Path(frag_len_matrix_path).unlink()
+    # except:
+    #     pass
     scipy.sparse.save_npz(f'{output_path}/temp/hits_dict/{worker_id}_ANT.npz',ANT_matrix)
     # print(f'Get_all_ant: Worker {worker_id} done!')
     # print(datetime.datetime.now(),flush=True)
@@ -242,7 +260,7 @@ def get_ant_all_workers(eff_len_arr,mean_f_len,std_f_len,threads,output_path,num
         future.get()
     pool.close()
     pool.join()
-def prepare_hits(SR_sam,output_path,isoform_index_dict,threads):
+def prepare_hits(SR_sam,output_path,isoform_index_dict,gene_isoform_index,threads):
     Path(f'{output_path}/temp/').mkdir(exist_ok=True,parents=True)
     print('Sorting sam file by read name...',flush=True)
     print(datetime.datetime.now())
@@ -257,7 +275,7 @@ def prepare_hits(SR_sam,output_path,isoform_index_dict,threads):
     byte_marker = get_aln_line_marker(alignment_file_path,threads)
     Path(f'{output_path}/temp/hits_dict/').mkdir(exist_ok=True,parents=True)
     # Path(f'{output_path}/temp/fragment_lengths/').mkdir(exist_ok=True,parents=True)
-    theta_arr,mean_f_len,std_f_len,eff_len_arr,num_batches_dict =  get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isoform_index_dict)
+    theta_arr,mean_f_len,std_f_len,eff_len_arr,num_batches_dict =  get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isoform_index_dict,gene_isoform_index)
     print('Get all hits dict done',flush=True)
     print(datetime.datetime.now(),flush=True)
     get_ant_all_workers(eff_len_arr,mean_f_len,std_f_len,threads,output_path,num_batches_dict,isoform_index_dict)

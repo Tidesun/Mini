@@ -26,3 +26,5 @@ mean_f_len = None
 read_len_dist_sm_dict_path = None
 LR_cond_prob_calc = 'form_1'
 sr_design_matrix = 'regular'
+output_path = None
+pretrained_model_path = None

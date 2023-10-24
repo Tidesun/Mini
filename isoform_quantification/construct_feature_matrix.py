@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
+import scipy
 from util import check_region_type,cal_inner_region_len
 import config
 def check_full_rank(isoform_region_matrix):
@@ -122,7 +123,7 @@ def calculate_condition_number(region_isoform_dict,isoform_names,normalize_A):
         # print(isoform_names_indics)
         condition_numbers = (np.float('nan'),np.float('nan'),np.float('nan'),np.float('nan'))
     matrix_dict = {'isoform_region_matrix':isoform_region_matrix,'condition_number':condition_numbers,
-                   'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics}
+                   'region_names_indics':region_names_indics,'isoform_names_indics':isoform_names_indics,'singular_values':scipy.linalg.svdvals(isoform_region_matrix)}
     return matrix_dict
 def cal_weight_multi_exon_region(short_read_gene_matrix_dict,region_len_dict,SR_read_len):
     isoform_region_matrix = short_read_gene_matrix_dict['isoform_region_matrix'].copy()

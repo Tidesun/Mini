@@ -1,0 +1,116 @@
+# reference
+for seq in ['PacBio']:
+    for coverage in [x.split('/')[-1] for x in glob.glob('/nfs/turbo/umms-kinfai/dingjie/Project/MiniQuant/Data_analysis_based_on_community/Extract_features_for_machine_learning/*')]:
+        for metric in ['mRD']:
+            SR_cov = coverage.split('_SR')[-1]
+            LR_cov = coverage.split('_vs_')[0].split('LR')[-1]
+            if SR_cov not in ['10M', '40M', '100M'] or LR_cov not in ['1M', '5M', '10M','20M']:
+                continue
+            if seq == 'dRNA':
+                feature_path = f'/nfs/turbo/umms-kinfai/dingjie/Project/MiniQuant/Data_analysis_based_on_community/Extract_features_for_machine_learning/{coverage}/dRNA-ONT_vs_cDNA-Illumina/Extract_features/'
+            else:
+                feature_path = f'/nfs/turbo/umms-kinfai/dingjie/Project/MiniQuant/Data_analysis_based_on_community/Extract_features_for_machine_learning/{coverage}/cDNA-{seq}_vs_cDNA-Illumina/Extract_features/'
+            with open(feature_path+'gene_community_id_dict.pkl','rb') as f:
+                gene_community_id_dict = pickle.load(f)
+            com_df = pd.Series(gene_community_id_dict)
+            #[[gname,gene_length,exon_lengths,isoforms_lengths,region_lengths]]
+            #structure feature
+            gene_structure_features_dict = {}
+            with open('data/gene_features.pkl','rb') as f:
+                features = pickle.load(f)
+                for feature in features:
+                    gene_structure_features_dict[feature[0]] = feature[1:]
+            structure_features = {}
+            for gene,feature in gene_structure_features_dict.items():
+                community_id = com_df.loc[gene]
+                [gene_length,exon_length,isoform_length,region_length] = feature
+                if community_id not in structure_features:
+                    structure_features[community_id] = [[],[],[],[]]
+                structure_features[community_id][0].append(gene_length)
+                structure_features[community_id][1] += isoform_length
+                structure_features[community_id][2] += exon_length
+                structure_features[community_id][3] += region_length
+            features = []
+            community_ids = []
+            for community_id in sorted(structure_features.keys()):
+                feat = np.concatenate([
+                    [len(structure_features[community_id][0]),len(structure_features[community_id][1]),len(structure_features[community_id][2]),len(structure_features[community_id][3])],
+                    get_stats(structure_features[community_id][0]),
+                    get_stats(structure_features[community_id][1]),
+                    get_stats(structure_features[community_id][2]),
+                    get_stats(structure_features[community_id][3])])
+                features.append(feat)
+                community_ids.append(community_id)
+            gene_structure_feature_df = pd.DataFrame(np.concatenate([np.array([community_ids]).T,features],axis=1))
+            gene_structure_feature_df = gene_structure_feature_df.set_index(0)
+            # data feature
+            features = np.load(feature_path +'/features.npz')['features']
+            community_ids =np.load(feature_path +'/features.npz')['community_ids']
+            data_feature_df = pd.DataFrame(np.concatenate([np.array([community_ids]).T,features],axis=1))
+            data_feature_df = data_feature_df.set_index(0)
+            # kvalue
+            SR_kval_df = pd.read_csv('/nfs/turbo/umms-kinfai/dingjie/Project/Mili/6_data_analysis/Kvalue/DataSim/Kvalue_separate/cDNA-Illumina/Kvalue_Polyester.gene.sr-gcn.20220406.txt',sep='\t').set_index("ID")
+            SR_kval_df = SR_kval_df[f'H1-hESC_Illumina_rep1.{SR_cov}']
+            if seq == 'ONT':
+                LR_kval_df = pd.read_csv('/nfs/turbo/umms-kinfai/dingjie/Project/Mili/6_data_analysis/Kvalue/DataSim/Kvalue_separate/cDNA-ONT/Kvalue_MiliSim.cDNA_1D.default.gene.sr-gcn.20220406.txt',sep='\t').set_index("ID")
+                LR_kval_df = LR_kval_df[f'H1-hESC_Illumina_rep1.{LR_cov}']
+            elif seq == 'PacBio':
+                LR_kval_df = pd.read_csv('/nfs/turbo/umms-kinfai/dingjie/Project/Mili/6_data_analysis/Kvalue/DataSim/Kvalue_separate/cDNA-PacBio/Kvalue_IsoSeqSim.cDNA-PacBio.default.gene.sr-gcn.20230805.txt',sep='\t').set_index("Gene")
+                LR_kval_df = LR_kval_df[f'H1-hESC_rep1_cDNA-PacBio_{LR_cov}']
+            elif seq == 'dRNA':
+                LR_kval_df = pd.read_csv('/nfs/turbo/umms-kinfai/dingjie/Project/Mili/6_data_analysis/Kvalue/DataSim/Kvalue_separate/dRNA-ONT/Kvalue_MiliSim.dRNA.default.gene.sr-gcn.20220406.txt',sep='\t').set_index("ID")
+                LR_kval_df = LR_kval_df[f'H1-hESC_Illumina_rep1.{LR_cov}']
+                
+
+            Kval_features = {}
+            for gene in SR_kval_df.index:
+                community_id = com_df.loc[gene]
+                if community_id not in Kval_features:
+                    Kval_features[community_id] = [[],[]]
+                Kval_features[community_id][0].append(SR_kval_df.loc[gene])
+                Kval_features[community_id][1].append(LR_kval_df.loc[gene])
+            features = []
+            community_ids = []
+            for community_id in sorted(Kval_features.keys()):
+                feat = np.concatenate([
+                    get_stats(Kval_features[community_id][0]),
+                    get_stats(Kval_features[community_id][1])])
+                features.append(feat)
+                community_ids.append(community_id)
+            Kvalue_feature_df = pd.DataFrame(np.concatenate([np.array([community_ids]).T,features],axis=1))
+            Kvalue_feature_df = Kvalue_feature_df.set_index(0)
+            # concat all features
+            all_features_df = gene_structure_feature_df.join(data_feature_df,lsuffix='_struc',rsuffix='_data').join(Kvalue_feature_df)
+            all_features_df.index = all_features_df.index.astype(int)
+            # relate feature with label
+            if seq != 'dRNA':
+                label_path = f'/nfs/turbo/umms-kinfai/dingjie/Project/MiniQuant/Data_analysis_based_on_community/Hybrid_weight_with_diff_weight/Evaluation_community/{coverage}/Hybrid/MiniQuant_gene_I/MiniQuant_{metric}_metric_cDNA-{seq}_vs_cDNA-Illumina_20230722_within_gene.tsv'
+            else:
+                label_path = f'/nfs/turbo/umms-kinfai/dingjie/Project/MiniQuant/Data_analysis_based_on_community/Hybrid_weight_with_diff_weight/Evaluation_community/{coverage}/Hybrid/MiniQuant_gene_I/MiniQuant_{metric}_metric_dRNA-ONT_vs_cDNA-Illumina_20230722_within_gene.tsv'
+
+            label_df =pd.read_csv(label_path,sep='\t',usecols=[0]+list(range(5,5+21)))
+            label_df['Gene'] = label_df['Gene'].apply(lambda x:x.replace('community',''))
+            label_df = label_df.set_index('Gene')
+            label_df.columns = [c.split('_')[-1] for c in label_df.columns]
+            label_df.index = label_df.index.astype(int)
+            filtered_all_features_df = all_features_df.loc[label_df.index]
+            all_features = []
+            all_labels = []
+            for i in range(0,101,5):
+                alpha = str(i/100)
+                if alpha == "0.0" or alpha == '1.0':
+                    alpha = alpha.split('.')[0]
+                # features
+                df = filtered_all_features_df.copy()
+                df['alpha'] = i/100
+                all_features.append(df.values)
+                all_labels.append(label_df[alpha].values)
+            all_features_arr = np.concatenate(all_features)
+            all_labels_arr = np.expand_dims(np.concatenate(all_labels),1)
+            # scale and impute
+    #         X = all_features_arr
+    #         y = all_labels_arr
+    #         scaler = sklearn.preprocessing.StandardScaler().fit(X)
+    #         X_scaled = scaler.transform(X)
+    #         X_imputed = SimpleImputer(strategy='median').fit_transform(X_scaled)
+            np.savez(f'data/{coverage}_{seq}_{metric}', x=all_features_arr, y=all_labels_arr)

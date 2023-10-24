@@ -9,7 +9,15 @@ from parse_annotation_main import parse_reference_annotation,process_annotation_
 from parse_alignment_main import parse_alignment
 import config
 import datetime
+from pathlib import Path
+import shutil
 def TrEESR(ref_file_path,output_path,short_read_alignment_file_path,long_read_alignment_file_path,sr_region_selection,filtering,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=0):
+    try:
+        shutil.rmtree(output_path)
+    except:
+        pass
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    Path(f'{output_path}/temp/machine_learning/').mkdir(parents=True, exist_ok=True)
     if short_read_alignment_file_path is not None:
         READ_LEN = infer_read_len(short_read_alignment_file_path)
     start_time = datetime.datetime.now()
@@ -46,10 +54,12 @@ def TrEESR(ref_file_path,output_path,short_read_alignment_file_path,long_read_al
                 isoform_length_dict[isoform_name] = gene_isoforms_length_dict[chr_name][gene_name][isoform_name]
                 num_isoforms_dict[isoform_name] =  len(raw_isoform_exons_dict[chr_name][gene_name])
     info_dict_list = [raw_gene_num_exon_dict,gene_num_exon_dict,gene_num_isoform_dict,raw_isoform_num_exon_dict,isoform_length_dict,num_isoforms_dict]
-    generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict)
+    gene_feature_dict = generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gene_matrix_dict,info_dict_list,same_structure_isoform_dict,removed_gene_isoform_dict,gene_points_dict)
     ref_annotation_dict_list = [gene_exons_dict,gene_points_dict,gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,LR_gene_regions_dict,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict]
-    return short_read_gene_matrix_dict,long_read_gene_matrix_dict,ref_annotation_dict_list
+    return gene_feature_dict
 def get_kvalues_dict(ref_file_path,threads,READ_LEN=150,READ_JUNC_MIN_MAP_LEN=10):
     gene_points_dict,gene_isoforms_dict,gene_regions_dict,genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict = parse_reference_annotation(ref_file_path,threads,READ_LEN,READ_JUNC_MIN_MAP_LEN)
     long_read_gene_matrix_dict = calculate_all_condition_number(gene_isoforms_dict,gene_regions_dict,allow_multi_exons=True)
     return long_read_gene_matrix_dict
+
+

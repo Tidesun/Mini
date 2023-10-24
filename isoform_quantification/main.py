@@ -32,13 +32,13 @@ def parse_arguments():
     optional_TrEESR.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix info [default:False] [True,False]")
     optional_TrEESR.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
     optional_TrEESR.add_argument('--keep_sr_exon_region',type=str, default='nonfullrank',help="Keep exon region for SR if using real data to filter region nonfullrank: only keep zero count exon region in non fulll rank gene [default:nonfullrank][nonfullrank,all,none]")
-    optional_TrEESR.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
+    optional_TrEESR.add_argument('--use_weight_matrix',type=str, default='False',help="Whether use weight matrix[default:True][True,False]")
     optional_TrEESR.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
     optional_TrEESR.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
     optional_TrEESR.add_argument('--sr_design_matrix',type=str, default='weight',help="How to calculate design matrix [default:weight][weight,binary]")
     weight_path = os.path.dirname(os.path.realpath(__file__))+'/weights/nanosim_weight_dict.pkl'
     # assert os.path.exists(weight_path)
-    optional_TrEESR.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
+    optional_TrEESR.add_argument('--region_weight_path',type=str, default=None,help="Mili LR region weight path")
 
     # requiredNamed_TransELS = parser_TransELS.add_argument_group('required named arguments for isoform quantification')
     # requiredNamed_TransELS.add_argument('-gtf','--gtf_annotation_path', type=str, help="The path of annotation file",required=True)
@@ -98,7 +98,7 @@ def parse_arguments():
     optional_EM.add_argument('--assign_unique_mapping_option',type=str,default='linear_model',help='How to assign unique mapping reads [Options:linear_model,manual_assign] [default:linear_model]')
     optional_EM.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
     optional_EM.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
-    optional_EM.add_argument('--use_weight_matrix',type=str, default='True',help="Whether use weight matrix[default:True][True,False]")
+    optional_EM.add_argument('--use_weight_matrix',type=str, default='False',help="Whether use weight matrix[default:True][True,False]")
     optional_EM.add_argument('--normalize_lr_A',type=str, default='True',help="Whether normalize lr A [default:True] [True,False]")
     # optional_EM.add_argument('--same_struc_isoform_handling',type=str, default='keep',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
     optional_EM.add_argument('--add_full_length_region',type=str, default='all',help="Whether add full length region[default:all] [all,nonfullrank,none]")
@@ -108,27 +108,31 @@ def parse_arguments():
     optional_EM.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
     optional_EM.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='nonfullrank',help="Keep exon region for SR if using real data to filter region nonfullrank: only keep zero count exon region in non fulll rank gene [default:nonfullrank][nonfullrank,all,none]")
-    optional_EM.add_argument('--region_weight_path',type=str, default=weight_path,help="Mili LR region weight path")
+    optional_EM.add_argument('--region_weight_path',type=str, default=None,help="Mili LR region weight path")
     optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified,LR]")
     optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
     optional_EM.add_argument('--EM_SR_num_iters',type=int, default=200,help="Number of EM SR iterations")
     optional_EM.add_argument('--EM_output_frequency',type=int, default=200,help="Frequency(in itertations) of outputting EM results")
+    pretrained_model_path = os.path.dirname(os.path.realpath(__file__))+'/pretrained_models/GENCODE/cDNA-ONT/'
+    optional_EM.add_argument('--pretrained_model_path',type=str, default=pretrained_model_path,help="The pretrained model path to identify the alpha")
     optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
-    optional_EM.add_argument('--inital_theta',type=str, default='LR',help="inital_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
-    optional_EM.add_argument('--inital_theta_eps',type=float, default=0.0,help="inital_theta eps [float]")
-    optional_EM.add_argument('--eps_strategy',type=str, default='add_eps_small',help="how to add inital_theta eps [add_eps_all,add_eps_small]. (add_eps_small: add isoform with theta < eps with eps. add_eps: add eps to all isoforms)")
+    optional_EM.add_argument('--inital_theta','--initial_theta',type=str, default='LR',help="initial_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
+    optional_EM.add_argument('--inital_theta_eps','--initial_theta_eps',type=float, default=0.0,help="initial_theta eps [float]")
+    optional_EM.add_argument('--eps_strategy',type=str, default='add_eps_small',help="how to add initial_theta eps [add_eps_all,add_eps_small]. (add_eps_small: add isoform with theta < eps with eps. add_eps: add eps to all isoforms)")
     optional_EM.add_argument('--isoform_start_end_site_tolerance',type=int, default=20,help="Isoform Start and end site tolerance for mapping long reads")
     optional_EM.add_argument('--junction_site_tolerance',type=int, default=5,help="Junction site tolerance for mapping long reads")
     optional_EM.add_argument('--read_len_dist_sm_dict_path',type=str, default=None,help="The path of read length distribution for long reads")
     optional_EM.add_argument('--LR_cond_prob_calc',type=str, default='form_2',help="How to calculate LR length distribution [form_1,form_2]")
+    
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
     else:
         args.filtering = False
     # config.same_struc_isoform_handling = args.same_struc_isoform_handling
+    config.output_path = args.output_path
     config.same_struc_isoform_handling = 'keep'
     config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
     config.multi_exon_region_weight = args.multi_exon_region_weight
@@ -252,6 +256,7 @@ def parse_arguments():
         config.eps_strategy = args.eps_strategy
         config.read_len_dist_sm_dict_path = args.read_len_dist_sm_dict_path
         config.LR_cond_prob_calc = args.LR_cond_prob_calc
+        config.pretrained_model_path = args.pretrained_model_path
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option
             args.long_read_sam_path = None

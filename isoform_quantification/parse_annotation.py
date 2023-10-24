@@ -10,6 +10,7 @@ import pickle
 import copy
 import config
 from patch_mp import patch_mp_connection_bpo_17560
+from parse_annotation_features import save_gene_structure_features
 ##########
 def split_and_sort_exons(gene_exons_dict):
     new_gene_exons_dict = {}
@@ -302,5 +303,6 @@ def parse_annotation(ref_annotation_path,threads):
                         gene_points_dict[chr_name][gene_name][pos] = point_index
                         point_index += 1
     isoforms_regions_len_dict,gene_regions_dict,genes_regions_len_dict = generate_exon_indicator_for_isoform(gene_exons_dict, gene_points_dict, raw_isoform_exons_dict,threads)
+    save_gene_structure_features(gene_exons_dict,raw_gene_exons_dict,gene_isoforms_length_dict,genes_regions_len_dict,config.output_path)
     return [gene_exons_dict,gene_points_dict, gene_isoforms_dict,genes_regions_len_dict,
             isoforms_regions_len_dict, gene_regions_dict, gene_isoforms_length_dict,raw_isoform_exons_dict,raw_gene_exons_dict,same_structure_isoform_dict]

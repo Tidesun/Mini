@@ -9,10 +9,12 @@ import os
 import gc
 from EM_hybrid.EM_LR import prepare_LR
 from EM_hybrid.EM_SR import prepare_hits
+from machine_learning.predict_alpha import predict_alpha
 import scipy
 import config
 import datetime
 import scipy.sparse
+import scipy.stats
 import time
 import warnings
 warnings.filterwarnings('ignore')
@@ -49,14 +51,16 @@ def build_dummy_gene_reads(isoform_gene_dict,isoform_index_dict,num_isoforms):
     row = []
     col = []
     data = []
+    gene_list = []
     for gene,isoform_indices in gene_index_dict.items():
         for isoform_index in isoform_indices:
             row.append(num_genes)
             col.append(isoform_index)
             data.append(1)
         num_genes += 1
+        gene_list.append(gene)
     dummy_gene = scipy.sparse.coo_matrix((data, (row, col)), shape=(num_genes, num_isoforms))
-    return dummy_gene
+    return dummy_gene,gene_list
 def get_connected_components(cond_prob_matrix):
     biadjacency = scipy.sparse.csr_matrix(cond_prob_matrix)
     adjacency = scipy.sparse.bmat([[None, biadjacency], [biadjacency.T, None]], format='csr')
@@ -101,11 +105,16 @@ def construct_community(isoform_gene_dict,isoform_index_dict,output_path,threads
     num_SRs,num_LRs,num_isoforms = ANT.shape[0], cond_prob.shape[0],ANT.shape[1]
     print(f'Number of SRs:{num_SRs}')
     print(f'Number of LRs:{num_LRs}')
-    dummy_gene = build_dummy_gene_reads(isoform_gene_dict,isoform_index_dict,num_isoforms)
+    dummy_gene,gene_list = build_dummy_gene_reads(isoform_gene_dict,isoform_index_dict,num_isoforms)
     cond_prob_matrix = scipy.sparse.vstack([ANT,cond_prob,dummy_gene])
     labels = get_connected_components(cond_prob_matrix)
     SR_labels,LR_labels,isoform_labels = labels[:num_SRs],labels[num_SRs:num_SRs+num_LRs],labels[cond_prob_matrix.shape[0]:]
+    gene_community_id_dict = {}
+    for label,gene in zip(labels[num_SRs+num_LRs:cond_prob_matrix.shape[0]],gene_list):
+        gene_community_id_dict[gene] = label
     serialize_community(SR_labels,LR_labels,isoform_labels,ANT,cond_prob,output_path,threads)
+    with open(f'{output_path}/temp/machine_learning/gene_community_id_dict.pkl','wb') as f:
+        pickle.dump(gene_community_id_dict,f)
     return num_SRs,num_LRs
 def EM_worker(worker_id,output_df,output_path,eff_len_arr,num_SRs,num_LRs):
     num_iters = config.EM_SR_num_iters
@@ -178,12 +187,7 @@ def EM_worker(worker_id,output_df,output_path,eff_len_arr,num_SRs,num_LRs):
     return LR_TPM_df,SR_TPM_df,all_community_iteration_df
 def callback_error(result):
     print('ERR:', result,flush=True)
-def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output_path,threads):
-    print('Start constructing the community...')
-    st = time.time()
-    num_SRs,num_LRs = construct_community(isoform_gene_dict,isoform_index_dict,output_path,threads)
-    duration = (time.time() - st)
-    print(f'Done in {duration} seconds!')
+def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output_path,threads,num_SRs,num_LRs):
     print('Start quantification...')  
     st = time.time()
     pool = mp.Pool(threads)
@@ -210,7 +214,7 @@ def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output
     all_iteration_df.to_csv(f'{output_path}/EM_iterations.tsv',sep='\t',index=False)
     duration = (time.time() - st)
     print(f'Done in {duration} seconds!')
-def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,SR_sam,output_path,threads,EM_choice):
+def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,output_path,threads,EM_choice):
    # prepare arr
     isoform_len_df = pd.Series(isoform_len_dict)
     isoform_list = sorted(isoform_len_dict.keys())
@@ -230,7 +234,13 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,SR_sam,output_path,threads
     isoform_len_arr = np.array(isoform_len_arr)
     eff_len_arr = isoform_len_arr.copy()
     # prepare SR
-    theta_SR_arr,eff_len_arr,SR_num_batches_dict = prepare_hits(SR_sam,output_path,isoform_index_dict,threads)
+    gene_isoform_index = {}
+    for rname in gene_isoforms_dict:
+        for gname in gene_isoforms_dict[rname]:
+            gene_isoform_index[gname] = []
+            for isoform in gene_isoforms_dict[rname][gname]:
+                gene_isoform_index[gname].append(isoform_index_dict[isoform])
+    theta_SR_arr,eff_len_arr,SR_num_batches_dict = prepare_hits(SR_sam,output_path,isoform_index_dict,gene_isoform_index,threads)
     output_df['Effective length'] = eff_len_arr
     theta_LR_arr,_,LR_num_batches_dict = prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,output_path)
     num_SRs = theta_SR_arr.sum()
@@ -246,7 +256,15 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,SR_sam,output_path,threads
     # print('Using {} as initial theta'.format(config.inital_theta))
     
     # theta_arr = theta_arr/theta_arr.sum()
-    EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output_path,threads)
+    print('Start constructing the community...',flush=True)
+    st = time.time()
+    num_SRs,num_LRs = construct_community(isoform_gene_dict,isoform_index_dict,output_path,threads)
+    duration = (time.time() - st)
+    print(f'Done in {duration} seconds!',flush=True)
+    print('Extract features and predict best alpha...',flush=True)
+    predict_alpha(output_path)
+    print(f'Done in {duration} seconds!',flush=True)
+    EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output_path,threads,num_SRs,num_LRs)
     
 
 

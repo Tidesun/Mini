@@ -1,4 +1,5 @@
 weights/
+pretrained_models/
 .vscode/
 base/
 # Byte-compiled / optimized / DLL files

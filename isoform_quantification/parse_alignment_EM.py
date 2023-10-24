@@ -16,6 +16,7 @@ import pickle
 from pathlib import Path
 import pandas as pd
 import shutil
+import glob
 
 # from memory_profiler import profile
 # def parse_alignment_iteration(alignment_file_path,gene_points_dict,gene_interval_tree_dict, filtered_gene_regions_dict,
@@ -27,7 +28,7 @@ def debuginfoStr(info):
         memusage = f.read().split('VmRSS:')[1].split('\n')[0][:-3]
     mem = int(memusage.strip())/1024
     print('Mem consumption: '+str(mem),flush=True)
-def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions_dict):
+def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions_dict,LR_feature_dict):
     with open(f'{output_path}/temp/LR_alignments_dict/isoform_dict','rb') as f:
         [isoform_len_dict,isoform_exon_dict,strand_dict] = pickle.load(f)
     reads_isoform_info = {}
@@ -35,6 +36,10 @@ def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions
     unique_mapping_expression_dict = {}
     for rname in gene_regions_read_mapping:
         for gname in gene_regions_read_mapping[rname]:
+            gene_unique_map_read_length = []
+            gene_multi_map_read_length = []
+            gene_3_end_truncation = []
+            gene_5_end_truncation = []
             for region in gene_regions_read_mapping[rname][gname]:
                 for read_mapping in gene_regions_read_mapping[rname][gname][region]:
                     read_start,read_end = read_mapping['read_pos']
@@ -68,12 +73,29 @@ def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions
                         isoform = next(iter(LR_gene_regions_dict[rname][gname][region]))
                         expression_dict[isoform] += 1
                         unique_mapping_expression_dict[isoform] += 1
+                        gene_unique_map_read_length.append(read_mapping['read_length'])
+                        if strand_dict[gname]  == '+':
+                            gene_5_end_truncation.append(start_offset/isoform_len)
+                            gene_3_end_truncation.append(end_offset/isoform_len)
+                        elif strand_dict[gname]  == '-':
+                            gene_3_end_truncation.append(start_offset/isoform_len)
+                            gene_5_end_truncation.append(end_offset/isoform_len)
+                        else:
+                            raise Exception('Stand wrong!')
                     else:
+                        gene_multi_map_read_length.append(read_mapping['read_length'])
                         num_isoforms = len(LR_gene_regions_dict[rname][gname][region])
                         if config.inital_theta not in ['SR_unique','LR_unique','hybrid_unique']:
                             for isoform in LR_gene_regions_dict[rname][gname][region]:
                                 expression_dict[isoform] += 1/num_isoforms
-    return reads_isoform_info,expression_dict,unique_mapping_expression_dict
+            if gname not in LR_feature_dict:
+                LR_feature_dict[gname] = {'unique_mapping':gene_unique_map_read_length,'multi_mapping':gene_multi_map_read_length,'3_end_truncation':gene_3_end_truncation,'5_end_truncation':gene_5_end_truncation}
+            else:
+                LR_feature_dict[gname]['unique_mapping'] += gene_unique_map_read_length
+                LR_feature_dict[gname]['multi_mapping'] += gene_multi_map_read_length
+                LR_feature_dict[gname]['3_end_truncation'] += gene_3_end_truncation
+                LR_feature_dict[gname]['5_end_truncation'] += gene_5_end_truncation
+    return reads_isoform_info,expression_dict,unique_mapping_expression_dict,LR_feature_dict
 def get_read_len_dist(reads_isoform_info):
     read_len_dict = {}
     read_len_dist_dict = {}
@@ -98,8 +120,11 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
     batch_id = 0
     points_dict,interval_tree_dict, gene_regions_dict,\
         start_pos_list, start_gname_list, end_pos_list, end_gname_list = {},{},{},{},{},{},{}
+    LR_feature_dict = {}
     with open(alignment_file_path, 'r') as aln_file:
         local_gene_regions_read_pos = {}
+        local_gene_regions_read_count = {}
+        local_gene_regions_read_length = {}
         aln_file.seek(start_file_pos)
         max_buffer_size = 1e5
         buffer_size = 0
@@ -133,31 +158,54 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                             local_gene_regions_read_pos[rname][gname][region_name] = []
                         # if long_read:
                         local_gene_regions_read_pos[rname][gname][region_name].append(mapping)
+
+                        rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
+                        if rname not in local_gene_regions_read_count:
+                            local_gene_regions_read_count[rname],local_gene_regions_read_length[rname] = {},{}
+                            local_gene_regions_read_pos[rname] = {}
+                        if gname not in local_gene_regions_read_count[rname]:
+                            local_gene_regions_read_count[rname][gname],local_gene_regions_read_length[rname][gname] = {},{}
+                            local_gene_regions_read_pos[rname][gname] = {}
+                        if region_name not in local_gene_regions_read_count[rname][gname]:
+                            local_gene_regions_read_count[rname][gname][region_name],local_gene_regions_read_length[rname][gname][region_name] = 0,[]
+                            local_gene_regions_read_pos[rname][gname][region_name] = []
+                        local_gene_regions_read_count[rname][gname][region_name] += 1 
+                        local_gene_regions_read_length[rname][gname][region_name].append(mapping['read_length'])
                     buffer_size += 1
             except Exception as e:
                 # tb = traceback.format_exc()
                 # print(Exception('Failed to on ' + line, tb))
                 continue
             if buffer_size > max_buffer_size:
-                reads_isoform_info,expression_dict,unique_mapping_expression_dict = get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict)
+                reads_isoform_info,expression_dict,unique_mapping_expression_dict,LR_feature_dict = get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict,LR_feature_dict)
                 read_len_dict,read_len_dist_dict = get_read_len_dist(reads_isoform_info)
                 with open(f'{output_path}/temp/LR_alignments/reads_{worker_id}_{batch_id}','wb') as f:
                     pickle.dump([reads_isoform_info,read_len_dict],f)
                 with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
                     pickle.dump([read_len_dist_dict,expression_dict],f)
+                with open(f'{output_path}/temp/LR_alignments/read_count_length_{worker_id}_{batch_id}','wb') as f:
+                    pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos],f)
                 batch_id += 1
                 del reads_isoform_info
                 del expression_dict
                 del unique_mapping_expression_dict
                 local_gene_regions_read_pos = {}
+                local_gene_regions_read_count = {}
+                local_gene_regions_read_length = {}
                 buffer_size = 0
         if buffer_size > 0:
-            reads_isoform_info,expression_dict,unique_mapping_expression_dict =get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict)
+            reads_isoform_info,expression_dict,unique_mapping_expression_dict,LR_feature_dict =get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict,LR_feature_dict)
             read_len_dict,read_len_dist_dict = get_read_len_dist(reads_isoform_info)
             with open(f'{output_path}/temp/LR_alignments/reads_{worker_id}_{batch_id}','wb') as f:
                 pickle.dump([reads_isoform_info,read_len_dict],f)
             with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
                 pickle.dump([read_len_dist_dict,expression_dict],f)
+            with open(f'{output_path}/temp/LR_alignments/read_count_length_{worker_id}_{batch_id}','wb') as f:
+                pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos],f)
+            local_gene_regions_read_count = {}
+            local_gene_regions_read_length = {}
+    with open(f'{output_path}/temp/machine_learning/LR_feature_dict_{worker_id}','wb') as f:
+        pickle.dump(LR_feature_dict,f)
     return 
 # @profile
 # def get_aln_line_marker(alignment_file_path,threads):
@@ -205,7 +253,7 @@ def get_aln_line_marker(alignment_file_path,threads):
     for i in range(threads):
          aln_line_marker.append((byte_marker[i],byte_marker[i+1],i))
     return aln_line_marker
-def parse_alignment_EM(alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST):
+def parse_alignment_EM(alignment_file_path,gene_regions_dict,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST):
     print(threads)
     patch_mp_connection_bpo_17560()
     # Create sorted end and start positions
@@ -233,6 +281,79 @@ def parse_alignment_EM(alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,thr
         shutil.rmtree(f'{output_path}/temp/LR_alignments_dict/')
     except:
         pass
-
+    gene_regions_read_count = {}
+    gene_regions_read_length = {}
+    gene_regions_read_pos = {}
+    for fpath in glob.glob(f'{output_path}/temp/LR_alignments/read_count_length_*_*'):
+        with open(fpath,'rb') as f:
+            [local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos] = pickle.load(f)
+            for rname in local_gene_regions_read_count:
+                if rname not in gene_regions_read_count:
+                    gene_regions_read_count[rname] = {}
+                    gene_regions_read_length[rname] = {}
+                    gene_regions_read_pos[rname] = {}
+                for gname in local_gene_regions_read_count[rname]:
+                    if gname not in gene_regions_read_count[rname]:
+                        gene_regions_read_count[rname][gname] = {}
+                        gene_regions_read_length[rname][gname] = {}
+                        gene_regions_read_pos[rname][gname] = {}
+                    for region in local_gene_regions_read_count[rname][gname]:
+                        if region not in gene_regions_read_count[rname][gname]:
+                            gene_regions_read_count[rname][gname][region] = 0
+                            gene_regions_read_length[rname][gname][region] = []
+                            gene_regions_read_pos[rname][gname][region] = []
+                        gene_regions_read_count[rname][gname][region] += local_gene_regions_read_count[rname][gname][region]
+                        gene_regions_read_length[rname][gname][region] += local_gene_regions_read_length[rname][gname][region]
+                        gene_regions_read_pos[rname][gname][region] += local_gene_regions_read_pos[rname][gname][region]
+                
+    read_lens = []
+    for rname in gene_regions_read_length:
+        for gname in gene_regions_read_length[rname]:
+            for region in gene_regions_read_length[rname][gname]:
+                read_lens += gene_regions_read_length[rname][gname][region]
         
+    num_long_reads = 0
+    gene_full_length_region_dict = defaultdict(lambda:{})
+    isoform_max_num_exons_dict = {}
+    for rname in gene_regions_dict:
+        for gname in gene_regions_dict[rname]:
+            regions_set = set()
+            isoform_region_dict = defaultdict(lambda:set())
+            for region in gene_regions_dict[rname][gname]:
+                for isoform in gene_regions_dict[rname][gname][region]:
+                    isoform_region_dict[isoform].add(region)
+            for isoform in isoform_region_dict:
+                max_region_exon_num = 0
+                longest_region = ''
+                for region in isoform_region_dict[isoform]:
+                    region_exon_num = region.count(':')
+                    if max_region_exon_num < region_exon_num:
+                        max_region_exon_num = region_exon_num
+                        longest_region = region
+                isoform_max_num_exons_dict[isoform] = max_region_exon_num
+                for region in isoform_region_dict[isoform]:
+                    region_exon_num = region.count(':')
+                    if region_exon_num == max_region_exon_num:
+                        regions_set.add(region)
+            gene_full_length_region_dict[rname][gname] = regions_set
+    filtered_gene_regions_read_length = defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:[])))
+    for rname in gene_regions_read_length.copy():
+        for gname in gene_regions_read_length[rname].copy():    
+            # region_lens = []
+            for region in gene_regions_read_length[rname][gname].copy():
+                region_exon_num = region.count(':')
+                read_length_list = []
+                for read_length in gene_regions_read_length[rname][gname][region]:
+                    is_valid_read = True
+                    if (is_valid_read):
+                        read_length_list.append(read_length)
+                gene_regions_read_length[rname][gname][region] = read_length_list
+                gene_regions_read_count[rname][gname][region] = len(read_length_list)
+                num_long_reads += len(read_length_list)
+
+                if gene_regions_read_count[rname][gname][region] == 0:
+                    if region not in gene_full_length_region_dict[rname][gname]:
+                        del gene_regions_read_length[rname][gname][region]
+                        del gene_regions_read_count[rname][gname][region]
+    return gene_regions_read_count,gene_regions_read_length,sum(read_lens),num_long_reads
    
