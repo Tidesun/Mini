@@ -28,3 +28,4 @@ LR_cond_prob_calc = 'form_1'
 sr_design_matrix = 'regular'
 output_path = None
 pretrained_model_path = None
+threads = None

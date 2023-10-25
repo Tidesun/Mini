@@ -80,7 +80,7 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
     cond_prob_matrix = scipy.sparse.vstack(all_cond_prob_matrix)
     Path(f'{output_path}/temp/cond_prob/').mkdir(exist_ok=True,parents=True)
     scipy.sparse.save_npz(f'{output_path}/temp/cond_prob/{worker_id}_cond_prob.npz',cond_prob_matrix)
-    print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
+    # print(f'Calculate the cond prob for LR: Worker {worker_id} done!',flush=True)
     return {worker_id:num_batches}
 #     return all_reads_isoform_cond_prob
 def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_dict,read_len_dist,Sm_dict):

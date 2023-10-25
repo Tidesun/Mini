@@ -2,6 +2,7 @@ from collections import defaultdict
 import pysam
 import time
 import gc
+import datetime
 from pathlib import Path
 from construct_feature_matrix import generate_all_feature_matrix_short_read
 from construct_long_reads_feature_matrix import generate_all_feature_matrix_long_read
@@ -223,12 +224,9 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
     if total_bytes/1024/1024 < 10:
         threads = 1
     print('Preprocessing...',flush=True)
-    start_time = time.time()
     isoform_len_dict,isoform_gene_dict,gene_isoforms_dict = prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads)
-    end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
+    print('Processing long reads data done at {}'.format(str(datetime.datetime.now())))
     print('Start quantification...',flush=True)
-    start_time = time.time()
     if short_read_alignment_file_path is None:
         EM_algo_LR_alone(isoform_len_dict,isoform_gene_dict,output_path,threads,EM_choice)
     else:
@@ -247,11 +245,8 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
         Path(f'{output_path}/temp_lr.sorted.sam').unlink()
     except:
         pass
-    end_time = time.time()
     # try:
     #     shutil.rmtree(f'{output_path}/temp/')
     # except:
-    #     pass
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
-    
+    #     pass    
 

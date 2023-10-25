@@ -216,6 +216,7 @@ def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output
     print(f'Done in {duration} seconds!')
 def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,output_path,threads,EM_choice):
    # prepare arr
+    print('Start preparing short reads data...',flush=True)
     isoform_len_df = pd.Series(isoform_len_dict)
     isoform_list = sorted(isoform_len_dict.keys())
     isoform_index_dict = {}
@@ -245,10 +246,11 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,
     theta_LR_arr,_,LR_num_batches_dict = prepare_LR(isoform_len_df,isoform_index_dict,isoform_index_series,threads,output_path)
     num_SRs = theta_SR_arr.sum()
     num_LRs = theta_LR_arr.sum()
-    print(f'Number of SRs/eff_len:{num_SRs}')
-    print(f'Number of LRs:{num_LRs}')
-    print(f'Pseudo_count_SR:'+str(config.pseudo_count_SR))
-    print(f'Pseudo_count_LR:'+str(config.pseudo_count_LR),flush=True)
+    print('Prepare short reads data done at {}'.format(str(datetime.datetime.now())),flush=True)
+    # print(f'Number of SRs/eff_len:{num_SRs}')
+    # print(f'Number of LRs:{num_LRs}')
+    # print(f'Pseudo_count_SR:'+str(config.pseudo_count_SR))
+    # print(f'Pseudo_count_LR:'+str(config.pseudo_count_LR),flush=True)
     # write_result_to_tsv(f'{output_path}/SR_count.tsv',output_df,theta_SR_arr.flatten())
     # write_result_to_tsv(f'{output_path}/LR_count.tsv',output_df,theta_LR_arr.flatten())
     # np.savez_compressed(f'{output_path}/initial_theta',theta=theta_arr)
@@ -260,10 +262,9 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,
     st = time.time()
     num_SRs,num_LRs = construct_community(isoform_gene_dict,isoform_index_dict,output_path,threads)
     duration = (time.time() - st)
-    print(f'Done in {duration} seconds!',flush=True)
+    print('Done in {} seconds at {}!'.format(duration,str(datetime.datetime.now())),flush=True)
     print('Extract features and predict best alpha...',flush=True)
     predict_alpha(output_path)
-    print(f'Done in {duration} seconds!',flush=True)
     EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output_path,threads,num_SRs,num_LRs)
     
 

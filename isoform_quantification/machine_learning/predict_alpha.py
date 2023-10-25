@@ -4,6 +4,7 @@ import config
 import pickle
 import pandas as pd
 import time
+import datetime
 def predict_alpha(output_path):
     print('Using pretrained model in {} to predict the alpha...'.format(config.pretrained_model_path))
     start_time = time.time()
@@ -22,5 +23,5 @@ def predict_alpha(output_path):
     true_strategy_df = error_alpha.loc[error_alpha.groupby('id').apply(lambda rows:rows.error.idxmin())]
     true_strategy_df.to_csv(config.alpha_df_path,sep='\t',index=False)
     end_time = time.time()
-    print('Done in %.3f s'%(end_time-start_time),flush=True)
+    print('Done in {} seconds at {}'.format(end_time-start_time,str(datetime.datetime.now())),flush=True)
     

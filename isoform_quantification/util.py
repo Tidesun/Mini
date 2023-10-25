@@ -3,6 +3,9 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import io
+import config
+from pathlib import Path
+import concurrent.futures
 def sync_reference_name(ref_name):
     ref_name = ref_name.upper()
     match = re.search("(?<=CHR).*", ref_name)
@@ -45,41 +48,51 @@ def get_coord(region,gene_points_dict,rname,gname):
             coords.append(str(reverse_dict[pt]))
         all_coords.append(':'.join(coords))
     return '-'.join(all_coords)
-def output_matrix_info(short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_points_dict,output_path):
+def matrix_info_writer(args):
+    short_read_gene_matrix_dict,long_read_gene_matrix_dict,gname,rname,gene_points_dict,output_path = args
     bio = io.BytesIO()
-    for gname,rname in list_of_all_genes_chrs:
-        bio.write(str.encode('{}\n'.format(gname)))
-        all_isoforms = long_read_gene_matrix_dict[rname][gname]['isoform_names_indics'].keys()
-        bio.write(str.encode('{}\n'.format(','.join(all_isoforms))))
-        bio.write(str.encode('----------------------------\n'))
-        SR_all_coord_region = []
-        LR_all_coord_region = []
-        for region,index in short_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
-            SR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
-        for region,index in long_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
-            LR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
-        lr_A = long_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
-        sr_A = short_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
-        
-        bio.write(str.encode('SR_A\n'))
-        np.savetxt(bio, sr_A,fmt='%1.3f',delimiter=',')
-        if 'region_abund_matrix' in short_read_gene_matrix_dict[rname][gname]:
-            sr_b = short_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
-            bio.write(str.encode('SR_b\n'))
-            np.savetxt(bio, sr_b,fmt='%1.3f',delimiter=',')
-            bio.write(str.encode('{}\n'.format(','.join(SR_all_coord_region))))
-            bio.write(str.encode('{}\n'.format(short_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
-        bio.write(str.encode('LR_A\n'))
-        np.savetxt(bio, lr_A,fmt='%1.3f',delimiter=',')
-        if 'region_abund_matrix' in long_read_gene_matrix_dict[rname][gname]:
-            lr_b = long_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
-            bio.write(str.encode('LR_b\n'))
-            np.savetxt(bio, lr_b,fmt='%1.3f',delimiter=',')
-            bio.write(str.encode('{}\n'.format(','.join(LR_all_coord_region))))
-            bio.write(str.encode('{}\n'.format(long_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
-        out_str = bio.getvalue().decode('latin1')
-        with open(output_path+'/info.out','w') as f:
-            f.write(out_str)
+    bio.write(str.encode('{}\n'.format(gname)))
+    all_isoforms = long_read_gene_matrix_dict[rname][gname]['isoform_names_indics'].keys()
+    bio.write(str.encode('{}\n'.format(','.join(all_isoforms))))
+    bio.write(str.encode('----------------------------\n'))
+    SR_all_coord_region = []
+    LR_all_coord_region = []
+    for region,index in short_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
+        SR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
+    for region,index in long_read_gene_matrix_dict[rname][gname]['region_names_indics'].items():
+        LR_all_coord_region.append(get_coord(region,gene_points_dict,rname,gname))
+    lr_A = long_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
+    sr_A = short_read_gene_matrix_dict[rname][gname]['isoform_region_matrix']
+    
+    bio.write(str.encode('SR_A\n'))
+    np.savetxt(bio, sr_A,fmt='%1.3f',delimiter=',')
+    if 'region_abund_matrix' in short_read_gene_matrix_dict[rname][gname]:
+        sr_b = short_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
+        bio.write(str.encode('SR_b\n'))
+        np.savetxt(bio, sr_b,fmt='%1.3f',delimiter=',')
+        bio.write(str.encode('{}\n'.format(','.join(SR_all_coord_region))))
+        bio.write(str.encode('{}\n'.format(short_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
+    bio.write(str.encode('LR_A\n'))
+    np.savetxt(bio, lr_A,fmt='%1.3f',delimiter=',')
+    if 'region_abund_matrix' in long_read_gene_matrix_dict[rname][gname]:
+        lr_b = long_read_gene_matrix_dict[rname][gname]['region_abund_matrix']
+        bio.write(str.encode('LR_b\n'))
+        np.savetxt(bio, lr_b,fmt='%1.3f',delimiter=',')
+        bio.write(str.encode('{}\n'.format(','.join(LR_all_coord_region))))
+        bio.write(str.encode('{}\n'.format(long_read_gene_matrix_dict[rname][gname]['region_names_indics'])))
+    out_str = bio.getvalue().decode('latin1')
+    with open(output_path+f'/matrix_info/{gname}','w') as f:
+        f.write(out_str)
+def output_matrix_info(short_read_gene_matrix_dict,long_read_gene_matrix_dict,list_of_all_genes_chrs,gene_points_dict,output_path):
+    Path(output_path+'/matrix_info/').mkdir(exist_ok=True,parents=True)
+    chunksize, extra = divmod(len(list_of_all_genes_chrs), config.threads)
+    if extra:
+        chunksize += 1
+    list_of_args = [(short_read_gene_matrix_dict,long_read_gene_matrix_dict,gname,rname,gene_points_dict,output_path) for gname,rname in list_of_all_genes_chrs]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=config.threads) as executor:
+        for _ in executor.map(matrix_info_writer,list_of_args,chunksize=chunksize):
+            pass
+    # list_of_all_genes_chrs
 def get_very_short_isoforms(output_path,filtered_gene_regions_read_length,LR_gene_regions_dict,isoform_length_dict):
     short_isoform_genes = set()
     short_isoforms = set()

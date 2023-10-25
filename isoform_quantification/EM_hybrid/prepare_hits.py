@@ -262,25 +262,24 @@ def get_ant_all_workers(eff_len_arr,mean_f_len,std_f_len,threads,output_path,num
     pool.join()
 def prepare_hits(SR_sam,output_path,isoform_index_dict,gene_isoform_index,threads):
     Path(f'{output_path}/temp/').mkdir(exist_ok=True,parents=True)
-    print('Sorting sam file by read name...',flush=True)
-    print(datetime.datetime.now())
+    # print('Sorting sam file by read name...',flush=True)
     # pysam.sort(SR_sam,'-n','-@',str(threads),'-o',f'{output_path}/temp/SR.sam')
     # alignment_file_path = f'{output_path}/temp/SR.sam'
     # pysam.collate(SR_sam,'-@',str(threads),'-o',f'{output_path}/temp/SR.sam')
     # alignment_file_path = f'{output_path}/temp/SR.sam'
     alignment_file_path = SR_sam
-    print('Done',flush=True)
-    print('Getting short reads info...',flush=True)
-    print(datetime.datetime.now(),flush=True)
+    # print('Done',flush=True)
+    # print('Getting short reads info...',flush=True)
+    # print(datetime.datetime.now(),flush=True)
     byte_marker = get_aln_line_marker(alignment_file_path,threads)
     Path(f'{output_path}/temp/hits_dict/').mkdir(exist_ok=True,parents=True)
     # Path(f'{output_path}/temp/fragment_lengths/').mkdir(exist_ok=True,parents=True)
     theta_arr,mean_f_len,std_f_len,eff_len_arr,num_batches_dict =  get_all_hits_dict(alignment_file_path,byte_marker,threads,output_path,isoform_index_dict,gene_isoform_index)
-    print('Get all hits dict done',flush=True)
-    print(datetime.datetime.now(),flush=True)
+    # print('Get all hits dict done',flush=True)
+    # print(datetime.datetime.now(),flush=True)
     get_ant_all_workers(eff_len_arr,mean_f_len,std_f_len,threads,output_path,num_batches_dict,isoform_index_dict)
-    print('Calculate ANT done',flush=True)
-    print(datetime.datetime.now(),flush=True)
+    # print('Calculate ANT done',flush=True)
+    # print(datetime.datetime.now(),flush=True)
     # try:
     #     Path(alignment_file_path).unlink()
     # except:

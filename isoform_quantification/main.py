@@ -133,6 +133,7 @@ def parse_arguments():
         args.filtering = False
     # config.same_struc_isoform_handling = args.same_struc_isoform_handling
     config.output_path = args.output_path
+    config.threads = args.threads
     config.same_struc_isoform_handling = 'keep'
     config.READ_JUNC_MIN_MAP_LEN = args.READ_JUNC_MIN_MAP_LEN
     config.multi_exon_region_weight = args.multi_exon_region_weight
@@ -270,6 +271,8 @@ def parse_arguments():
             # args.alpha = 0.5
             config.alpha = args.alpha
             config.alpha_df_path = args.alpha_df_path
+            if args.alpha_df_path is None:
+                config.alpha_df_path = args.output_path +'/hybrid_alpha.tsv'
             config.inital_theta = args.inital_theta
             EM_hybrid(args.gtf_annotation_path,args.short_read_sam_path,args.long_read_sam_path,args.output_path,alpha,beta,1e-6,args.filtering,args.multi_mapping_filtering,args.SR_quantification_option,SR_fastq_list,args.reference_genome,args.training,args.DL_model,args.assign_unique_mapping_option,args.threads,READ_JUNC_MIN_MAP_LEN=args.READ_JUNC_MIN_MAP_LEN,EM_choice=args.EM_choice,iter_theta=args.iter_theta)
         else:
