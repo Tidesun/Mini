@@ -141,6 +141,7 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                 aln_line = parse_read_line(line)
                 [_, _, rname, _] = aln_line
                 if rname not in points_dict:
+                    points_dict,interval_tree_dict,start_pos_list, start_gname_list, end_pos_list, end_gname_list = {},{},{},{},{},{}
                     with open(f'{output_path}/temp/LR_alignments_dict/{rname}','rb') as f:
                         [points_dict[rname],interval_tree_dict[rname],gene_regions_dict[rname],start_pos_list[rname],end_pos_list[rname],start_gname_list[rname],end_gname_list[rname]] = pickle.load(f)
                 mapping = map_f(points_dict,interval_tree_dict, gene_regions_dict,
@@ -171,7 +172,7 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                             local_gene_regions_read_pos[rname][gname][region_name] = []
                         local_gene_regions_read_count[rname][gname][region_name] += 1 
                         local_gene_regions_read_length[rname][gname][region_name].append(mapping['read_length'])
-                    buffer_size += 1
+                        buffer_size += 1
             except Exception as e:
                 # tb = traceback.format_exc()
                 # print(Exception('Failed to on ' + line, tb))
@@ -184,7 +185,9 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                 with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
                     pickle.dump([read_len_dist_dict,expression_dict],f)
                 with open(f'{output_path}/temp/LR_alignments/read_count_length_{worker_id}_{batch_id}','wb') as f:
-                    pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos],f)
+                    pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length],f)
+                with open(f'{output_path}/temp/machine_learning/LR_feature_dict_{worker_id}_{batch_id}','wb') as f:
+                    pickle.dump(LR_feature_dict,f)
                 batch_id += 1
                 del reads_isoform_info
                 del expression_dict
@@ -192,6 +195,7 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                 local_gene_regions_read_pos = {}
                 local_gene_regions_read_count = {}
                 local_gene_regions_read_length = {}
+                LR_feature_dict = {}
                 buffer_size = 0
         if buffer_size > 0:
             reads_isoform_info,expression_dict,unique_mapping_expression_dict,LR_feature_dict =get_reads_isoform_info(output_path,local_gene_regions_read_pos,gene_regions_dict,LR_feature_dict)
@@ -201,11 +205,12 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
             with open(f'{output_path}/temp/LR_alignments/dist_{worker_id}_{batch_id}','wb') as f:
                 pickle.dump([read_len_dist_dict,expression_dict],f)
             with open(f'{output_path}/temp/LR_alignments/read_count_length_{worker_id}_{batch_id}','wb') as f:
-                pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos],f)
+                pickle.dump([local_gene_regions_read_count,local_gene_regions_read_length],f)
+            with open(f'{output_path}/temp/machine_learning/LR_feature_dict_{worker_id}_{batch_id}','wb') as f:
+                pickle.dump(LR_feature_dict,f)
             local_gene_regions_read_count = {}
             local_gene_regions_read_length = {}
-    with open(f'{output_path}/temp/machine_learning/LR_feature_dict_{worker_id}','wb') as f:
-        pickle.dump(LR_feature_dict,f)
+            LR_feature_dict = {}
     return 
 # @profile
 # def get_aln_line_marker(alignment_file_path,threads):
@@ -283,28 +288,23 @@ def parse_alignment_EM(alignment_file_path,gene_regions_dict,READ_JUNC_MIN_MAP_L
         pass
     gene_regions_read_count = {}
     gene_regions_read_length = {}
-    gene_regions_read_pos = {}
     for fpath in glob.glob(f'{output_path}/temp/LR_alignments/read_count_length_*_*'):
         with open(fpath,'rb') as f:
-            [local_gene_regions_read_count,local_gene_regions_read_length,local_gene_regions_read_pos] = pickle.load(f)
+            [local_gene_regions_read_count,local_gene_regions_read_length] = pickle.load(f)
             for rname in local_gene_regions_read_count:
                 if rname not in gene_regions_read_count:
                     gene_regions_read_count[rname] = {}
                     gene_regions_read_length[rname] = {}
-                    gene_regions_read_pos[rname] = {}
                 for gname in local_gene_regions_read_count[rname]:
                     if gname not in gene_regions_read_count[rname]:
                         gene_regions_read_count[rname][gname] = {}
                         gene_regions_read_length[rname][gname] = {}
-                        gene_regions_read_pos[rname][gname] = {}
                     for region in local_gene_regions_read_count[rname][gname]:
                         if region not in gene_regions_read_count[rname][gname]:
                             gene_regions_read_count[rname][gname][region] = 0
                             gene_regions_read_length[rname][gname][region] = []
-                            gene_regions_read_pos[rname][gname][region] = []
                         gene_regions_read_count[rname][gname][region] += local_gene_regions_read_count[rname][gname][region]
                         gene_regions_read_length[rname][gname][region] += local_gene_regions_read_length[rname][gname][region]
-                        gene_regions_read_pos[rname][gname][region] += local_gene_regions_read_pos[rname][gname][region]
                 
     read_lens = []
     for rname in gene_regions_read_length:

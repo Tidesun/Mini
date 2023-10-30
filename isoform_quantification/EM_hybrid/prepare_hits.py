@@ -139,13 +139,30 @@ def get_hits_dict(args):
     hits_matrix_sum = np.array(hits_matrix.sum(axis=1))[:,0]
     unique_mapping_mask = (hits_matrix_sum == 1)
     multi_mapping_mask = (hits_matrix_sum != 1)
-    frag_len_matrix_csc = scipy.sparse.csc_matrix(frag_len_matrix)
+    frag_len_matrix = scipy.sparse.csr_matrix(frag_len_matrix)
+    unique_frag_len_matrix_csc = scipy.sparse.csc_matrix(frag_len_matrix[unique_mapping_mask,:])
+    multi_frag_len_matrix_csc = scipy.sparse.csc_matrix(frag_len_matrix[multi_mapping_mask,:])
     SR_feature_dict = {}
+    # duration_time0_list = []
+    # duration_time1_list = []
     for gname,isoform_index in gene_isoform_index.items():
-        frag_len_matrix_csr = scipy.sparse.csr_matrix(frag_len_matrix_csc[:,isoform_index])
-        SR_feature_dict[gname] = {'unique_mapping':frag_len_matrix_csr[unique_mapping_mask].data,'multi_mapping':frag_len_matrix_csr[multi_mapping_mask].data}
+        # st = time.time()
+        unique_mapping = unique_frag_len_matrix_csc[:,isoform_index].data
+        # time0 = time.time()
+        multi_mapping = multi_frag_len_matrix_csc[:,isoform_index].data
+        # time1 = time.time()
+        SR_feature_dict[gname] = {'unique_mapping':unique_mapping,'multi_mapping':multi_mapping}
+        # duration_time0_list.append(time0-st)
+        # duration_time1_list.append(time1-time0)
+    # st = time.time()
     with open(f'{output_path}/temp/machine_learning/SR_feature_dict_{worker_id}','wb') as f:
         pickle.dump(SR_feature_dict,f)
+    # dump_time = time.time() -st
+    # print(f'Get_hits_dict: Worker {worker_id} done with {batch_id} batches!')
+    # print(f'{worker_id}:'+str(len(duration_time0_list)))
+    # print(f'{worker_id}:'+str(np.sum(duration_time0_list)))
+    # print(f'{worker_id}:'+str(np.sum(duration_time1_list)))
+    # print(f'{worker_id}:'+str(dump_time),flush=True)
     # print(f'Get_hits_dict: Worker {worker_id} done with {batch_id} batches!')
     # print(datetime.datetime.now(),flush=True)
     # print(times,flush=True)
