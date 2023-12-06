@@ -109,7 +109,7 @@ def parse_arguments():
     optional_EM.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='nonfullrank',help="Keep exon region for SR if using real data to filter region nonfullrank: only keep zero count exon region in non fulll rank gene [default:nonfullrank][nonfullrank,all,none]")
     optional_EM.add_argument('--region_weight_path',type=str, default=None,help="Mili LR region weight path")
-    optional_EM.add_argument('--EM_choice',type=str, default='LIQA_modified',help="EM_choice[LIQA,LIQA_modified,LR]")
+    optional_EM.add_argument('--EM_choice',type=str, default='LR',help="EM_choice[SR,LR,hybrid]")
     optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
