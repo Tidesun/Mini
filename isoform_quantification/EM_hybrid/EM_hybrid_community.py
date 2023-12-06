@@ -17,6 +17,7 @@ import scipy.sparse
 import scipy.stats
 import time
 import warnings
+from EM_hybrid.util import sp_unique
 warnings.filterwarnings('ignore')
 def E_step_SR(ANT,theta_eff_len_product_arr):
     q = ANT.multiply(theta_eff_len_product_arr)
@@ -67,95 +68,138 @@ def get_connected_components(cond_prob_matrix):
     adjacency.sort_indices()
     n_components,labels = scipy.sparse.csgraph.connected_components(adjacency,return_labels=True)
     return labels
-def serialize_community_worker(worker_id,all_worker_labels,SR_labels,LR_labels,isoform_labels,output_path,num_processed_SR,num_processed_LR):
-    ANT = scipy.sparse.load_npz(f'{output_path}/temp/hits_dict/{worker_id}_ANT.npz')
-    ANT = scipy.sparse.csr_matrix(ANT)
-    cond_prob = scipy.sparse.load_npz(f'{output_path}/temp/cond_prob/{worker_id}_cond_prob.npz')
-    cond_prob = scipy.sparse.csr_matrix(cond_prob)
-    for worker_label,community_batch_index in zip(all_worker_labels,range(len(all_worker_labels))):
+def serialize_community_worker(worker_id,worker_label,isoform_labels,output_path):
+    community_batch_index = worker_id
+    worker_isoform = []
+    worker_community = []
+    for community_index in worker_label:
+        community_isoforms_index = (isoform_labels == community_index)
+        community_isoform = np.where(community_isoforms_index)[0]
+        worker_isoform.append(community_isoform)
+        worker_community.append(community_index)
+    with open(f'{output_path}/temp/community/{community_batch_index}_isoform.pkl','wb') as f:
+        pickle.dump(worker_isoform,f, protocol=4)
+    with open(f'{output_path}/temp/community/{community_batch_index}_community.pkl','wb') as f:
+        pickle.dump(worker_community,f, protocol=4)
+    for reads_batch_id in range(config.threads):
         worker_ANT = []
         worker_cond_prob = []
-        if worker_id == 0:
-            worker_isoform = []
-            worker_community = []
+        ANT = scipy.sparse.load_npz(f'{output_path}/temp/hits_dict/{reads_batch_id}_ANT.npz')
+        ANT = scipy.sparse.csc_matrix(ANT)
+        cond_prob = scipy.sparse.load_npz(f'{output_path}/temp/cond_prob/{reads_batch_id}_cond_prob.npz')
+        cond_prob = scipy.sparse.csc_matrix(cond_prob)
         for community_index in worker_label:
-            community_SR_index = (SR_labels == community_index).nonzero()[0]
-            community_LR_index = (LR_labels == community_index).nonzero()[0]
             community_isoforms_index = (isoform_labels == community_index)
-            community_isoform = np.where(community_isoforms_index)[0]
-            worker_community_SR_index = community_SR_index[(community_SR_index < num_processed_SR + ANT.shape[0]) & (community_SR_index >= num_processed_SR)].copy()
-            worker_community_LR_index = community_LR_index[(community_LR_index < num_processed_LR + cond_prob.shape[0]) & (community_LR_index >= num_processed_LR)].copy()
-            worker_community_SR_index -= num_processed_SR
-            worker_community_LR_index -= num_processed_LR
-            community_ANT = ANT[worker_community_SR_index,:][:,community_isoforms_index]
-            community_cond_prob = cond_prob[worker_community_LR_index,:][:,community_isoforms_index]
+            community_ANT = scipy.sparse.csr_matrix(ANT[:,community_isoforms_index])
+            # remove all zero rows
+            community_ANT = community_ANT[community_ANT.getnnz(1)>0]
+            community_cond_prob =  scipy.sparse.csr_matrix(cond_prob[:,community_isoforms_index])
+            community_cond_prob = community_cond_prob[community_cond_prob.getnnz(1)>0]
             worker_ANT.append(community_ANT)
             worker_cond_prob.append(community_cond_prob)
-            if worker_id == 0:
-                worker_isoform.append(community_isoform)
-                worker_community.append(community_index)
-        with open(f'{output_path}/temp/community/{community_batch_index}_{worker_id}_ANT.pkl','wb') as f:
+        with open(f'{output_path}/temp/community/{community_batch_index}_{reads_batch_id}_ANT.pkl','wb') as f:
             pickle.dump(worker_ANT,f, protocol=4)
-        with open(f'{output_path}/temp/community/{community_batch_index}_{worker_id}_cond_prob.pkl','wb') as f:
+        with open(f'{output_path}/temp/community/{community_batch_index}_{reads_batch_id}_cond_prob.pkl','wb') as f:
             pickle.dump(worker_cond_prob,f, protocol=4)
-        if worker_id == 0:
-            with open(f'{output_path}/temp/community/{community_batch_index}_isoform.pkl','wb') as f:
-                pickle.dump(worker_isoform,f, protocol=4)
-            with open(f'{output_path}/temp/community/{community_batch_index}_community.pkl','wb') as f:
-                pickle.dump(worker_community,f, protocol=4)
-def serialize_community(SR_labels,LR_labels,isoform_labels,output_path,num_processed_SRs,num_processed_LRs,threads):
+    # for worker_label,community_batch_index in zip(all_worker_labels,range(len(all_worker_labels))):
+    #     worker_ANT = []
+    #     worker_cond_prob = []
+    #     if worker_id == 0:
+    #         worker_isoform = []
+    #         worker_community = []
+    #     for community_index in worker_label:
+    #         community_SR_index = (SR_labels == community_index).nonzero()[0]
+    #         community_LR_index = (LR_labels == community_index).nonzero()[0]
+    #         community_isoforms_index = (isoform_labels == community_index)
+    #         community_isoform = np.where(community_isoforms_index)[0]
+    #         worker_community_SR_index = community_SR_index[(community_SR_index < num_processed_SR + ANT.shape[0]) & (community_SR_index >= num_processed_SR)].copy()
+    #         worker_community_LR_index = community_LR_index[(community_LR_index < num_processed_LR + cond_prob.shape[0]) & (community_LR_index >= num_processed_LR)].copy()
+    #         worker_community_SR_index -= num_processed_SR
+    #         worker_community_LR_index -= num_processed_LR
+    #         community_ANT = ANT[worker_community_SR_index,:][:,community_isoforms_index]
+    #         community_cond_prob = cond_prob[worker_community_LR_index,:][:,community_isoforms_index]
+    #         worker_ANT.append(community_ANT)
+    #         worker_cond_prob.append(community_cond_prob)
+    #         if worker_id == 0:
+    #             worker_isoform.append(community_isoform)
+    #             worker_community.append(community_index)
+    #     with open(f'{output_path}/temp/community/{community_batch_index}_{worker_id}_ANT.pkl','wb') as f:
+    #         pickle.dump(worker_ANT,f, protocol=4)
+    #     with open(f'{output_path}/temp/community/{community_batch_index}_{worker_id}_cond_prob.pkl','wb') as f:
+    #         pickle.dump(worker_cond_prob,f, protocol=4)
+    #     if worker_id == 0:
+    #         with open(f'{output_path}/temp/community/{community_batch_index}_isoform.pkl','wb') as f:
+    #             pickle.dump(worker_isoform,f, protocol=4)
+    #         with open(f'{output_path}/temp/community/{community_batch_index}_community.pkl','wb') as f:
+    #             pickle.dump(worker_community,f, protocol=4)
+def serialize_community(isoform_labels,output_path,threads):
     Path(f'{output_path}/temp/community/').mkdir(exist_ok=True,parents=True)
     pool = mp.Pool(threads)
     unique_labels = np.unique(isoform_labels)
     np.random.shuffle(unique_labels)
     all_worker_labels = np.array_split(unique_labels, threads)
     futures = []
-    for worker_id,num_processed_SR,num_processed_LR in zip(range(threads),num_processed_SRs,num_processed_LRs):
-        futures.append(pool.apply_async(serialize_community_worker,(worker_id,all_worker_labels,SR_labels,LR_labels,isoform_labels,output_path,num_processed_SR,num_processed_LR,),error_callback=callback_error))
+    for worker_id in range(threads):
+        futures.append(pool.apply_async(serialize_community_worker,(worker_id,all_worker_labels[worker_id],isoform_labels,output_path,),error_callback=callback_error))
     for future in futures:
         future.get()
     pool.close()
     pool.join()
 def construct_community_helper(isoform_gene_dict,isoform_index_dict,output_path,threads):
+    st = time.time()
     ANT = []
     cond_prob = []
-    num_processed_SRs = []
-    num_processed_LRs = []
+    # num_processed_SRs = []
+    # num_processed_LRs = []
     for worker_id in range(threads):
         worker_ANT = scipy.sparse.load_npz(f'{output_path}/temp/hits_dict/{worker_id}_ANT.npz')
         worker_cond_prob = scipy.sparse.load_npz(f'{output_path}/temp/cond_prob/{worker_id}_cond_prob.npz')
         ANT.append(worker_ANT)
         cond_prob.append(worker_cond_prob)
-        num_processed_SRs.append(worker_ANT.shape[0])
-        num_processed_LRs.append(worker_cond_prob.shape[0])
+        # num_processed_SRs.append(worker_ANT.shape[0])
+        # num_processed_LRs.append(worker_cond_prob.shape[0])
     del worker_ANT
     del worker_cond_prob
     ANT = scipy.sparse.vstack(ANT)
     cond_prob = scipy.sparse.vstack(cond_prob)
     ANT = scipy.sparse.csr_matrix(ANT)
     cond_prob = scipy.sparse.csr_matrix(cond_prob)
-    if threads > 1:
-        num_processed_SRs = [0]+[sum(np.array(num_processed_SRs)[:i]) for i in range(threads-1)]
-        num_processed_LRs = [0]+[sum(np.array(num_processed_LRs)[:i]) for i in range(threads-1)]
-    else:
-        num_processed_SRs = [0]
-        num_processed_LRs = [0]
+    time1 = time.time()
+    # if threads > 1:
+    #     num_processed_SRs = [0]+[sum(np.array(num_processed_SRs)[:i]) for i in range(threads-1)]
+    #     num_processed_LRs = [0]+[sum(np.array(num_processed_LRs)[:i]) for i in range(threads-1)]
+    # else:
+    #     num_processed_SRs = [0]
+    #     num_processed_LRs = [0]
     num_SRs,num_LRs,num_isoforms = ANT.shape[0], cond_prob.shape[0],ANT.shape[1]
 #     print(f'Number of SRs:{num_SRs}')
 #     print(f'Number of LRs:{num_LRs}')
     dummy_gene,gene_list = build_dummy_gene_reads(isoform_gene_dict,isoform_index_dict,num_isoforms)
-    cond_prob_matrix = scipy.sparse.vstack([ANT,cond_prob,dummy_gene])
+    time2 = time.time()
+    reads_matrix_uniq = sp_unique(scipy.sparse.vstack([ANT.sign(),cond_prob.sign()]), axis=0)
+    time3 = time.time()
+    del ANT
+    del cond_prob
+    cond_prob_matrix = scipy.sparse.vstack([reads_matrix_uniq,dummy_gene])
     labels = get_connected_components(cond_prob_matrix)
-    SR_labels,LR_labels,isoform_labels = labels[:num_SRs],labels[num_SRs:num_SRs+num_LRs],labels[cond_prob_matrix.shape[0]:]
+    time4 = time.time()
+    isoform_labels = labels[cond_prob_matrix.shape[0]:]
     gene_community_id_dict = {}
-    for label,gene in zip(labels[num_SRs+num_LRs:cond_prob_matrix.shape[0]],gene_list):
+    for label,gene in zip(labels[reads_matrix_uniq.shape[0]:cond_prob_matrix.shape[0]],gene_list):
         gene_community_id_dict[gene] = label
     with open(f'{output_path}/temp/machine_learning/gene_community_id_dict.pkl','wb') as f:
         pickle.dump(gene_community_id_dict,f)
-    return SR_labels,LR_labels,isoform_labels,num_processed_SRs,num_processed_LRs,num_SRs,num_LRs
+    # print(time1-st)
+    # print(time2-time1)
+    # print(time3-time2)
+    # print(time4-time3)
+    return isoform_labels,num_SRs,num_LRs
 def construct_community(isoform_gene_dict,isoform_index_dict,output_path,threads):
-    SR_labels,LR_labels,isoform_labels,num_processed_SRs,num_processed_LRs,num_SRs,num_LRs = construct_community_helper(isoform_gene_dict,isoform_index_dict,output_path,threads)
-    serialize_community(SR_labels,LR_labels,isoform_labels,output_path,num_processed_SRs,num_processed_LRs,threads)
+    isoform_labels,num_SRs,num_LRs = construct_community_helper(isoform_gene_dict,isoform_index_dict,output_path,threads)
+    st = time.time()
+    serialize_community(isoform_labels,output_path,threads)
+    time5 = time.time()
+    # print(time5-st)
     return num_SRs,num_LRs
 def EM_worker(worker_id,output_df,output_path,eff_len_arr,num_SRs,num_LRs):
     num_iters = config.EM_SR_num_iters
@@ -205,11 +249,11 @@ def EM_worker(worker_id,output_df,output_path,eff_len_arr,num_SRs,num_LRs):
             new_theta_arr = M_step(isoform_q_arr_SR,isoform_q_arr_LR,theta_arr,community_eff_len_arr,alpha)
             new_theta_arr = np.array(new_theta_arr).flatten()
             diff = np.abs(theta_arr[new_theta_arr>1e-7] - new_theta_arr[new_theta_arr>1e-7])/new_theta_arr[new_theta_arr>1e-7]
-            theta_arr = new_theta_arr
             # record iteration results
             iteration_df = pd.DataFrame({'theta':theta_arr},index=community_isoform)
             iteration_df['iteration'] = i
             community_iteration_df.append(iteration_df)
+            theta_arr = new_theta_arr
             if diff[diff > min_diff].shape[0] == 0:
                 break
         # calculate LR TPM
@@ -312,7 +356,7 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,
     # write_result_to_tsv(f'{output_path}/SR_count.tsv',output_df,theta_SR_arr.flatten())
     # write_result_to_tsv(f'{output_path}/LR_count.tsv',output_df,theta_LR_arr.flatten())
     # np.savez_compressed(f'{output_path}/initial_theta',theta=theta_arr)
-    Path(f'{output_path}/EM_iterations/').mkdir(exist_ok=True,parents=True)
+    # Path(f'{output_path}/EM_iterations/').mkdir(exist_ok=True,parents=True)
     # print('Using {} as initial theta'.format(config.inital_theta))
     
     # theta_arr = theta_arr/theta_arr.sum()

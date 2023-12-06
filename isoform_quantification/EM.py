@@ -7,7 +7,7 @@ from pathlib import Path
 from construct_feature_matrix import generate_all_feature_matrix_short_read
 from construct_long_reads_feature_matrix import generate_all_feature_matrix_long_read
 from parse_annotation_main import parse_reference_annotation, process_annotation_for_alignment
-from parse_alignment_EM import parse_alignment_EM
+from parse_alignment_EM import parse_alignment_EM,get_region_read_count_length
 from EM_libraries.EM_algo import EM_algo_main
 from EM_theta_iterative_libraries.EM_algo import EM_algo_theta_iter_main
 from EM_kde_libraries.EM_algo import EM_algo_kde_main
@@ -36,7 +36,8 @@ def infer_read_len(short_read_alignment_file_path):
         exit()
     return READ_LEN
 def parse(ref_file_path, READ_JUNC_MIN_MAP_LEN, short_read_alignment_file_path, long_read_alignment_file_path,multi_mapping_filtering,threads):
-    
+    print('Start calculating K-value...',flush=True)
+    start_time = time.time()
     if short_read_alignment_file_path is not None:
         READ_LEN = infer_read_len(short_read_alignment_file_path)
     else:
@@ -46,8 +47,6 @@ def parse(ref_file_path, READ_JUNC_MIN_MAP_LEN, short_read_alignment_file_path, 
     output_path =  config.output_path
     with open(f'{output_path}/temp/machine_learning/temp_LR_alignments_dict.pkl','wb') as f:
         pickle.dump([gene_isoforms_dict,LR_gene_regions_dict, LR_genes_regions_len_dict, gene_isoforms_length_dict, raw_isoform_exons_dict],f)
-    print('Start calculating K-value...',flush=True)
-    start_time = time.time()
     short_read_gene_matrix_dict = calculate_all_condition_number(gene_isoforms_dict,SR_gene_regions_dict,SR_genes_regions_len_dict,150,allow_multi_exons=False) 
     SR_kvalue_dict = {}
     for rname in short_read_gene_matrix_dict:
@@ -85,8 +84,6 @@ def parse(ref_file_path, READ_JUNC_MIN_MAP_LEN, short_read_alignment_file_path, 
 #     return short_read_gene_matrix_dict, SR_read_len
 def map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering):
     print('Mapping long read to regions...',flush=True)
-    with open(f'{output_path}/temp/machine_learning/temp_LR_alignments_dict.pkl','rb') as f:
-        [gene_isoforms_dict,LR_gene_regions_dict, LR_genes_regions_len_dict, gene_isoforms_length_dict, raw_isoform_exons_dict] = pickle.load(f)
     start_time = time.time()
     if multi_mapping_filtering == 'unique_only':
         pysam.view('-F','2820','-q','10','-@',f'{threads}','-h','-o',f'{output_path}/temp_lr.sam',long_read_alignment_file_path,catch_stdout=False)
@@ -97,7 +94,10 @@ def map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,
         pysam.sort(f'{output_path}/temp_lr.sam','-@',str(threads),'-m','3G','-o',f'{output_path}/temp_lr.sorted.sam')
         long_read_alignment_file_path = f'{output_path}/temp_lr.sorted.sam'
     print(long_read_alignment_file_path)
-    long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs = parse_alignment_EM(long_read_alignment_file_path,LR_gene_regions_dict,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST)
+    parse_alignment_EM(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST)
+    with open(f'{output_path}/temp/machine_learning/temp_LR_alignments_dict.pkl','rb') as f:
+        [gene_isoforms_dict,LR_gene_regions_dict, LR_genes_regions_len_dict, gene_isoforms_length_dict, raw_isoform_exons_dict] = pickle.load(f)
+    long_read_gene_regions_read_count,long_read_gene_regions_read_length,total_long_read_length,num_LRs = get_region_read_count_length(LR_gene_regions_dict,output_path) 
     long_read_gene_matrix_dict = generate_all_feature_matrix_long_read(gene_isoforms_dict,LR_gene_regions_dict,long_read_gene_regions_read_count,long_read_gene_regions_read_length,LR_genes_regions_len_dict,gene_isoforms_length_dict,raw_isoform_exons_dict,num_LRs,total_long_read_length,READ_JUNC_MIN_MAP_LEN,output_path,threads,False)
     LR_kvalue_dict = {}
     for rname in long_read_gene_matrix_dict:
@@ -175,15 +175,23 @@ def parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_a
             pickle.dump(dic,f)
     with open(f'{output_path}/temp/LR_alignments_dict/isoform_dict','wb') as f:
         pickle.dump([isoform_len_dict,isoform_exon_dict,strand_dict],f)
-    return gene_isoforms_dict,isoform_len_dict,CHR_LIST,isoform_gene_dict
+    with open(f'{output_path}/temp/LR_alignments_dict/gene_isoform_dict','wb') as f:
+        pickle.dump([gene_isoforms_dict,isoform_len_dict,isoform_gene_dict],f)
+    return CHR_LIST
             
     # for dic in [isoform_len_dict,isoform_exon_dict,strand_dict]:
         
     
 
 def prepare_EM_LR(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,threads,multi_mapping_filtering='best',READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
-    gene_isoforms_dict,isoform_len_dict,CHR_LIST,isoform_gene_dict = parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,multi_mapping_filtering,threads)
+    CHR_LIST = parse_and_dump_dict(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,multi_mapping_filtering,threads)
     map_long_reads(long_read_alignment_file_path,READ_JUNC_MIN_MAP_LEN,CHR_LIST,output_path,threads,multi_mapping_filtering)
+    with open(f'{output_path}/temp/LR_alignments_dict/gene_isoform_dict','rb') as f:
+        [gene_isoforms_dict,isoform_len_dict,isoform_gene_dict] = pickle.load(f)
+    try:
+        shutil.rmtree(f'{output_path}/temp/LR_alignments_dict/')
+    except:
+        pass
     return isoform_len_dict,isoform_gene_dict,gene_isoforms_dict
 def EM(ref_file_path,short_read_alignment_file_path,long_read_alignment_file_path,output_path,alpha,beta,P,filtering,multi_mapping_filtering='best',SR_quantification_option='Mili',SR_fastq_list=[],reference_genome='',training=False,DL_model='',assign_unique_mapping_option='',threads=1,READ_LEN=0,READ_JUNC_MIN_MAP_LEN=15,EM_choice='LIQA_modified',iter_theta='True'):
     # Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -245,8 +253,8 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
         Path(f'{output_path}/temp_lr.sorted.sam').unlink()
     except:
         pass
-    # try:
-    #     shutil.rmtree(f'{output_path}/temp/')
-    # except:
-    #     pass    
+    try:
+        shutil.rmtree(f'{output_path}/temp/')
+    except:
+        pass    
 

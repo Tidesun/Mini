@@ -130,7 +130,9 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
         buffer_size = 0
         while True:
             line = aln_file.readline()
-            if aln_file.tell() > end_file_pos or not line:
+            # if aln_file.tell() > end_file_pos or not line:
+            #     break
+            if aln_file.tell() >= end_file_pos:
                 break
             try:
                 if line[0] == '@':
@@ -148,8 +150,9 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                     start_pos_list, start_gname_list, end_pos_list, end_gname_list,
                     READ_JUNC_MIN_MAP_LEN, CHR_LIST,aln_line)
                 if (mapping['read_mapped']):
-                    # random.seed(mapping['read_name'])
+                    #random.seed(mapping['read_name'])
                     for mapping_area in mapping['mapping_area']:
+                    # for mapping_are in [random.choice(mapping['mapping_area'])]:
                         rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
                         if rname not in local_gene_regions_read_pos:
                             local_gene_regions_read_pos[rname] = {}
@@ -258,7 +261,7 @@ def get_aln_line_marker(alignment_file_path,threads):
     for i in range(threads):
          aln_line_marker.append((byte_marker[i],byte_marker[i+1],i))
     return aln_line_marker
-def parse_alignment_EM(alignment_file_path,gene_regions_dict,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST):
+def parse_alignment_EM(alignment_file_path,READ_JUNC_MIN_MAP_LEN,output_path,threads,CHR_LIST):
     print(threads)
     patch_mp_connection_bpo_17560()
     # Create sorted end and start positions
@@ -282,10 +285,7 @@ def parse_alignment_EM(alignment_file_path,gene_regions_dict,READ_JUNC_MIN_MAP_L
     # gene_regions_read_count,gene_regions_read_length,num_mapped_lines,gene_regions_read_pos = watcher.get()
     pool.close()
     pool.join()
-    try:
-        shutil.rmtree(f'{output_path}/temp/LR_alignments_dict/')
-    except:
-        pass
+def get_region_read_count_length(gene_regions_dict,output_path):
     gene_regions_read_count = {}
     gene_regions_read_length = {}
     for fpath in glob.glob(f'{output_path}/temp/LR_alignments/read_count_length_*_*'):
