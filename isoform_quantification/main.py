@@ -118,7 +118,7 @@ def parse_arguments():
     pretrained_model_path = os.path.dirname(os.path.realpath(__file__))+'/pretrained_models/GENCODE/cDNA-ONT/'
     optional_EM.add_argument('--pretrained_model_path',type=str, default=pretrained_model_path,help="The pretrained model path to identify the alpha")
     optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
-    optional_EM.add_argument('--inital_theta','--initial_theta',type=str, default='LR',help="initial_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
+    optional_EM.add_argument('--inital_theta','--initial_theta',type=str, default='uniform',help="initial_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
     optional_EM.add_argument('--inital_theta_eps','--initial_theta_eps',type=float, default=0.0,help="initial_theta eps [float]")
     optional_EM.add_argument('--eps_strategy',type=str, default='add_eps_small',help="how to add initial_theta eps [add_eps_all,add_eps_small]. (add_eps_small: add isoform with theta < eps with eps. add_eps: add eps to all isoforms)")
     optional_EM.add_argument('--isoform_start_end_site_tolerance',type=int, default=20,help="Isoform Start and end site tolerance for mapping long reads")
