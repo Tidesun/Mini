@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
-# import scipy
+import scipy
 from util import check_region_type,cal_inner_region_len
 import config
 def check_full_rank(isoform_region_matrix):
