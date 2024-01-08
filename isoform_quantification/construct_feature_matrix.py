@@ -86,7 +86,7 @@ def divide_by_zero(a,b):
         return a/b
 def get_condition_number(isoform_region_matrix):
     # Calculate K value
-    isoform_region_matrix = isoform_region_matrix[:,isoform_region_matrix!=0]
+    # isoform_region_matrix = isoform_region_matrix[:,isoform_region_matrix!=0]
     multiply_transpose_matrix = isoform_region_matrix.T.dot(isoform_region_matrix)
     singular_values = LA.svd(multiply_transpose_matrix,compute_uv=False)
     rank = LA.matrix_rank(multiply_transpose_matrix)
