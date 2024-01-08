@@ -139,6 +139,8 @@ def parse_for_EM_algo(annotation):
             gene_isoform_dict[gene_name].add(isoform_name)
             isoform_gene_dict[isoform_name] = gene_name
             isoform_exon_dict[isoform_name].append([start_pos,end_pos])
+            if strand != '+' or strand != '-':
+                strand = '+'
             strand_dict[gene_name] = strand
     for isoform in isoform_exon_dict:
         isoform_exon_dict[isoform] = sorted(isoform_exon_dict[isoform],key=lambda x:(x[0],x[1]))

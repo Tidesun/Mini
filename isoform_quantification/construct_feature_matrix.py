@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import linalg as LA
-import scipy
+# import scipy
 from util import check_region_type,cal_inner_region_len
 import config
 def check_full_rank(isoform_region_matrix):
@@ -86,12 +86,13 @@ def divide_by_zero(a,b):
         return a/b
 def get_condition_number(isoform_region_matrix):
     # Calculate K value
+    isoform_region_matrix = isoform_region_matrix[:,isoform_region_matrix!=0]
     multiply_transpose_matrix = isoform_region_matrix.T.dot(isoform_region_matrix)
     singular_values = LA.svd(multiply_transpose_matrix,compute_uv=False)
     rank = LA.matrix_rank(multiply_transpose_matrix)
 
     svd_val_max = np.sqrt(singular_values[0])
-    svd_val_pos_min = np.sqrt(singular_values[singular_values > 0].min())
+    svd_val_pos_min = np.sqrt(singular_values[singular_values > config.singular_values_tol].min())
     svd_val_min = 0
     if (rank == multiply_transpose_matrix.shape[0]):
         svd_val_min = np.sqrt(singular_values[-1])

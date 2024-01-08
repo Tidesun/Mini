@@ -127,10 +127,8 @@ def get_hits_dict(args):
 
     theta_path = f'{output_path}/temp/hits_dict/{worker_id}_theta_matrix.npz'
     np.savez_compressed(theta_path,theta=theta_matrix)
-
     frag_len_path = f'{output_path}/temp/hits_dict/{worker_id}_frag_len_arr.npz'
     np.savez_compressed(frag_len_path,frag_len=np.hstack(all_frag_len_arr))
-
     frag_len_matrix = scipy.sparse.vstack(all_frag_len_matrix)
     frag_len_matrix_path = f'{output_path}/temp/hits_dict/{worker_id}_frag_len.npz'
     scipy.sparse.save_npz(frag_len_matrix_path,frag_len_matrix)

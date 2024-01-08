@@ -24,7 +24,8 @@ def parse_arguments():
     optional_TrEESR.add_argument('-srsam','--short_read_sam_path', type=str, help="The path of short read sam file",required=False)
     optional_TrEESR.add_argument('-lrsam','--long_read_sam_path', type=str, help="The path of long read sam file",required=False)
     optional_TrEESR.add_argument('-t','--threads',type=int, default=1,help="Number of threads")
-    optional_TrEESR.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
+    optional_TrEESR.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
+    optional_TrEESR.add_argument('--singular_values_tol',type=float,default=1e-6,help="Singular value tolerence")
     optional_TrEESR.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:True][True,False]")
     optional_TrEESR.add_argument('--READ_JUNC_MIN_MAP_LEN',type=int, default=1,help="minimum mapped read length to consider a junction")
     optional_TrEESR.add_argument('--same_struc_isoform_handling',type=str, default='merge',help="How to handle isoforms with same structures within a gene[default:merge][merge,keep]")
@@ -106,7 +107,7 @@ def parse_arguments():
     optional_EM.add_argument('--sr_design_matrix',type=str, default='weight',help="How to calculate design matrix [default:weight][weight,binary]")
     optional_EM.add_argument('--output_matrix_info',type=str, default='False',help="Whether output matrix info [default:False] [True,False]")
     optional_EM.add_argument('--normalize_sr_A',type=str, default='True',help="Whether normalize sr A [default:False] [True,False]")
-    optional_EM.add_argument('--sr_region_selection',type=str, default='real_data',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
+    optional_EM.add_argument('--sr_region_selection',type=str, default='read_length',help="SR region selection methods [default:real_data][read_length,num_exons,real_data]")
     optional_EM.add_argument('--keep_sr_exon_region',type=str, default='nonfullrank',help="Keep exon region for SR if using real data to filter region nonfullrank: only keep zero count exon region in non fulll rank gene [default:nonfullrank][nonfullrank,all,none]")
     optional_EM.add_argument('--region_weight_path',type=str, default=None,help="Mili LR region weight path")
     optional_EM.add_argument('--EM_choice',type=str, default='LR',help="EM_choice[SR,LR,hybrid]")
@@ -125,7 +126,8 @@ def parse_arguments():
     optional_EM.add_argument('--junction_site_tolerance',type=int, default=5,help="Junction site tolerance for mapping long reads")
     optional_EM.add_argument('--read_len_dist_sm_dict_path',type=str, default=None,help="The path of read length distribution for long reads")
     optional_EM.add_argument('--LR_cond_prob_calc',type=str, default='form_2',help="How to calculate LR length distribution [form_1,form_2]")
-    
+    optional_EM.add_argument('--singular_values_tol',type=float,default=1e-6,help="Singular value tolerence")
+
     args = parser.parse_args()
     if args.filtering == 'True':
         args.filtering = True
@@ -158,6 +160,7 @@ def parse_arguments():
     else:
         config.use_weight_matrix = False
     config.add_full_length_region = args.add_full_length_region
+    config.singular_values_tol = args.singular_values_tol
     # config.kallisto_index = args.kallisto_index
     print('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     if args.subparser_name in ['cal_K_value','TrEESR']:
