@@ -126,7 +126,7 @@ def parse_arguments():
     optional_EM.add_argument('--junction_site_tolerance',type=int, default=5,help="Junction site tolerance for mapping long reads")
     optional_EM.add_argument('--read_len_dist_sm_dict_path',type=str, default=None,help="The path of read length distribution for long reads")
     optional_EM.add_argument('--LR_cond_prob_calc',type=str, default='form_2',help="How to calculate LR length distribution [form_1,form_2]")
-    optional_EM.add_argument('--singular_values_tol',type=float,default=1e-6,help="Singular value tolerence")
+    optional_EM.add_argument('--singular_values_tol',type=float,default=0,help="Singular value tolerence")
 
     args = parser.parse_args()
     if args.filtering == 'True':

@@ -58,23 +58,23 @@ def get_all_reads_isoform_cond_prob_LIQA_modified(args):
                 pdf = read_len_dist.loc[read_len,'PDF']/read_len_dist['PDF'].sum()
                 cdf = get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1)
                 Sm = Sm_dict[read_len]
-                # if cdf == 0 or Sm == 0:
-                #     cond_prob = pdf
-                # else:
-                if config.LR_cond_prob_calc == 'form_1':
-                    if cdf == 0 or Sm == 0:
-                        cond_prob = pdf
-                    else:
-                        cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1)) / Sm_dict[read_len]
-                elif config.LR_cond_prob_calc == 'form_2':
-                    if cdf == 0:
-                        cond_prob = pdf
-                    else:
-                        cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1))
-                elif config.LR_cond_prob_calc == 'no_read_length':
-                    cond_prob = 1
-                elif config.LR_cond_prob_calc == 'no_isoform_specific':
+                if cdf == 0 or Sm == 0:
                     cond_prob = pdf
+                else:
+                    if config.LR_cond_prob_calc == 'form_1':
+                        if cdf == 0 or Sm == 0:
+                            cond_prob = pdf
+                        else:
+                            cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1)) / Sm_dict[read_len]
+                    elif config.LR_cond_prob_calc == 'form_2':
+                        if cdf == 0:
+                            cond_prob = pdf
+                        else:
+                            cond_prob = pdf/(get_cdf(read_len_dist,isoform_len+1) - get_cdf(read_len_dist,1))
+                    elif config.LR_cond_prob_calc == 'no_read_length':
+                        cond_prob = 1
+                    elif config.LR_cond_prob_calc == 'no_isoform_specific':
+                        cond_prob = pdf
                 if isoform_len - read_len + 1 != 0:
                     cond_prob /= isoform_len - read_len + 1
                 else:
@@ -106,7 +106,4 @@ def get_cond_prob_MT_LIQA_modified(threads,output_path,isoform_df,isoform_index_
     pool.close()
     pool.join()
     return num_batches_dict
-    try:
-        shutil.rmtree(f'{output_path}/temp/LR_alignments/')
-    except Exception as e:
-        pass
+

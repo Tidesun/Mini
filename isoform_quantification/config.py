@@ -29,4 +29,4 @@ sr_design_matrix = 'regular'
 output_path = None
 pretrained_model_path = None
 threads = None
-singular_values_tol = 1e-5
+singular_values_tol = 0

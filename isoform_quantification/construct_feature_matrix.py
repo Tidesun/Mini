@@ -92,7 +92,10 @@ def get_condition_number(isoform_region_matrix):
     rank = LA.matrix_rank(multiply_transpose_matrix)
 
     svd_val_max = np.sqrt(singular_values[0])
-    svd_val_pos_min = np.sqrt(singular_values[singular_values > config.singular_values_tol].min())
+    if config.singular_values_tol == 0:
+        svd_val_pos_min = np.sqrt(singular_values[rank-1].min())
+    else:
+        svd_val_pos_min = np.sqrt(singular_values[singular_values > config.singular_values_tol].min())
     svd_val_min = 0
     if (rank == multiply_transpose_matrix.shape[0]):
         svd_val_min = np.sqrt(singular_values[-1])

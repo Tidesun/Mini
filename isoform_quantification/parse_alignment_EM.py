@@ -95,6 +95,7 @@ def get_reads_isoform_info(output_path,gene_regions_read_mapping,LR_gene_regions
                 LR_feature_dict[gname]['multi_mapping'] += gene_multi_map_read_length
                 LR_feature_dict[gname]['3_end_truncation'] += gene_3_end_truncation
                 LR_feature_dict[gname]['5_end_truncation'] += gene_5_end_truncation
+    # print(len(reads_isoform_info))
     return reads_isoform_info,expression_dict,unique_mapping_expression_dict,LR_feature_dict
 def get_read_len_dist(reads_isoform_info):
     read_len_dict = {}
@@ -132,7 +133,7 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
             line = aln_file.readline()
             # if aln_file.tell() > end_file_pos or not line:
             #     break
-            if aln_file.tell() >= end_file_pos:
+            if aln_file.tell() > end_file_pos or not line:
                 break
             try:
                 if line[0] == '@':
@@ -154,25 +155,17 @@ def parse_alignment_iteration(alignment_file_path, READ_JUNC_MIN_MAP_LEN,map_f,C
                     for mapping_area in mapping['mapping_area']:
                     # for mapping_are in [random.choice(mapping['mapping_area'])]:
                         rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
-                        if rname not in local_gene_regions_read_pos:
-                            local_gene_regions_read_pos[rname] = {}
-                        if gname not in local_gene_regions_read_pos[rname]:
-                            local_gene_regions_read_pos[rname][gname] = {}
-                        if region_name not in local_gene_regions_read_pos[rname][gname]:
-                            local_gene_regions_read_pos[rname][gname][region_name] = []
-                        # if long_read:
-                        local_gene_regions_read_pos[rname][gname][region_name].append(mapping)
 
-                        rname,gname,region_name = mapping_area['chr_name'],mapping_area['gene_name'],mapping_area['region_name']
                         if rname not in local_gene_regions_read_count:
-                            local_gene_regions_read_count[rname],local_gene_regions_read_length[rname] = {},{}
                             local_gene_regions_read_pos[rname] = {}
+                            local_gene_regions_read_count[rname],local_gene_regions_read_length[rname] = {},{}
                         if gname not in local_gene_regions_read_count[rname]:
-                            local_gene_regions_read_count[rname][gname],local_gene_regions_read_length[rname][gname] = {},{}
                             local_gene_regions_read_pos[rname][gname] = {}
+                            local_gene_regions_read_count[rname][gname],local_gene_regions_read_length[rname][gname] = {},{}
                         if region_name not in local_gene_regions_read_count[rname][gname]:
-                            local_gene_regions_read_count[rname][gname][region_name],local_gene_regions_read_length[rname][gname][region_name] = 0,[]
                             local_gene_regions_read_pos[rname][gname][region_name] = []
+                            local_gene_regions_read_count[rname][gname][region_name],local_gene_regions_read_length[rname][gname][region_name] = 0,[]
+                        local_gene_regions_read_pos[rname][gname][region_name].append(mapping)
                         local_gene_regions_read_count[rname][gname][region_name] += 1 
                         local_gene_regions_read_length[rname][gname][region_name].append(mapping['read_length'])
                         buffer_size += 1
