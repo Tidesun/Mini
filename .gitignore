@@ -1,5 +1,6 @@
 weights/
 pretrained_models/
+pretrained_models.tar.gz
 .vscode/
 base/
 # Byte-compiled / optimized / DLL files
