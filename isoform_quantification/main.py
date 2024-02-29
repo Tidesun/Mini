@@ -116,8 +116,7 @@ def parse_arguments():
     optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
     optional_EM.add_argument('--EM_SR_num_iters',type=int, default=200,help="Number of EM SR iterations")
     optional_EM.add_argument('--EM_output_frequency',type=int, default=200,help="Frequency(in itertations) of outputting EM results")
-    pretrained_model_path = os.path.dirname(os.path.realpath(__file__))+'/pretrained_models/GENCODE/cDNA-ONT/'
-    optional_EM.add_argument('--pretrained_model_path',type=str, default=pretrained_model_path,help="The pretrained model path to identify the alpha")
+    optional_EM.add_argument('--pretrained_model_path',type=str, default='cDNA-ONT',help="The pretrained model path to identify the alpha")
     optional_EM.add_argument('--alpha_df_path',type=str, default=None,help="Alpha df path")
     optional_EM.add_argument('--inital_theta','--initial_theta',type=str, default='uniform',help="initial_theta [LR,SR,LR_unique,SR_unique,uniform,hybrid,hybrid_unique,random]")
     optional_EM.add_argument('--inital_theta_eps','--initial_theta_eps',type=float, default=0.0,help="initial_theta eps [float]")
@@ -260,6 +259,8 @@ def parse_arguments():
         config.eps_strategy = args.eps_strategy
         config.read_len_dist_sm_dict_path = args.read_len_dist_sm_dict_path
         config.LR_cond_prob_calc = args.LR_cond_prob_calc
+        if args.pretrained_model_path in ['cDNA-ONT','dRNA-ONT','cDNA-PacBio']:
+            args.pretrained_model_path = os.path.dirname(os.path.realpath(__file__))+'/pretrained_models/' + args.pretrained_model_path +'/'
         config.pretrained_model_path = args.pretrained_model_path
         if args.EM_choice == 'SR':
             config.eff_len_option = args.eff_len_option

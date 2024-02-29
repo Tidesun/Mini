@@ -1,19 +1,20 @@
-# Mini
-**M͟i͟**xed Bayesian **n̲**etwork for **i̲**soform quantification (**Mini**) provides a highly-accurate bioinformatics tool for transcript abundance estimation.
+# miniQuant
+**M͟i͟**xed Bayesian **n̲**etwork for **i̲**soform quantification (**miniQuant**) provides a highly-accurate bioinformatics tool for transcript abundance estimation.
 
-**Mini** features: 
+**miniQuant** features: 
 1. Novel **K-value** metric: a key feature of the sequence share pattern that causes particularly high abundance estimation error, allowing us to identify a problematic set of gene isoforms with erroneous quantification that researchers should take extra attention in the study
 2. **Mixed Bayesian network**: a novel mixed Bayesian network model for transcript abundance estimation that can be applied to three different data scenarios: long-read-alone, short-read-alone and hybrid (i.e., long reads plus short reads) integrating the strengths of both long reads and short reads.
 ## Installation
 ```
-git clone https://github.com/Augroup/Mini.git
-cd Mini
+git clone https://github.com/Augroup/miniQuant.git
+wget -qO- https://miniquant.s3.us-east-2.amazonaws.com/pretrained_models.tar.gz | tar xvz
+cd miniQuant
 python -m venv base
 source base/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-## Isoform quantification by Mini
+## Isoform quantification by miniQuant
 ### Quantify using long reads data
 ```
 python isoform_quantification/main.py quantify \
@@ -39,6 +40,7 @@ python isoform_quantification/main.py quantify \
 -gtf GTF_ANNOTATION_PATH \
 -lrsam LONG_READS_SAM_PATH \
 -srsam SHORT_READS_SAM_PATH \
+--pretrained_model_path PRETRAINED_MODEL_PATH \
 --EM_choice hybrid \
 -t 1 \
 -o OUTPUT_PATH
@@ -50,6 +52,8 @@ arguments:
                         The path of long read sam file mapping to reference genome.
   -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
                         The path of short read sam file mapping to reference transcriptome.
+  --pretrained_model_path PRETRAINED_MODEL_PATH
+                        The pretrained model path to identify the alpha. default: cDNA-ONT. Can be one of the options [cDNA-ONT,dRNA-ONT,cDNA-PacBio] or file path of pretrained model.
   -t THREADS, --threads THREADS
                         Number of threads. Default is 1.
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
@@ -71,25 +75,6 @@ optional arguments
   --inital_theta INITAL_THETA
                         Inital_theta [LR,SR]. Set the initial theta based on the isoform 
                         expression given long reads(LR) or short reads (SR). Default is LR.
-```
-### Quantify using short reads data
-```
-python isoform_quantification/main.py quantify \
--gtf GTF_ANNOTATION_PATH \
--srsam SHORT_READ_SAM_PATH \
--t 1 \
---EM_choice SR \
--o OUTPUT_PATH
-
-arguments:
-  -gtf GTF_ANNOTATION_PATH, --gtf_annotation_path GTF_ANNOTATION_PATH
-                        The path of isoform annotation file in GTF format
-  -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
-                        The path of short read sam file mapping to reference transcriptome.
-  -t THREADS, --threads THREADS
-                        Number of threads. Default is 1.
-  -o OUTPUT_PATH, --output_path OUTPUT_PATH
-                        The path of output directory
 ```
 ## Calculate K-value
 ```
