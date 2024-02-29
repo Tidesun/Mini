@@ -47,8 +47,6 @@ def concat_features(output_path):
     # k value feature
     with open(f'{output_path}/temp/machine_learning/SR_kvalue_dict.pkl','rb') as f:
         SR_kval_df = pickle.load(f)
-    with open(f'{output_path}/temp/machine_learning/LR_kvalue_dict.pkl','rb') as f:
-        LR_kval_df = pickle.load(f)
     Kval_features = {}
     for gene in com_df.index:
         community_id = com_df.loc[gene]
@@ -57,37 +55,30 @@ def concat_features(output_path):
         if gene in SR_kval_df:
             Kval_features[community_id][0].append(SR_kval_df.loc[gene])
         else:
-            Kval_features[community_id][0].append(1.0)
-        if gene in LR_kval_df:
-            Kval_features[community_id][1].append(LR_kval_df.loc[gene])
-        else:
-            Kval_features[community_id][1].append(1.0)
+            Kval_features[community_id][0].append(np.float('nan'))
     features = []
     community_ids = []
     for community_id in sorted(Kval_features.keys()):
-        feat = np.concatenate([
-            get_stats(Kval_features[community_id][0]),
-            get_stats(Kval_features[community_id][1])])
+        feat = get_stats(Kval_features[community_id][0])
         features.append(feat)
         community_ids.append(community_id)
     Kvalue_feature_df = pd.DataFrame(np.concatenate([np.array([community_ids]).T,features],axis=1))
     Kvalue_feature_df = Kvalue_feature_df.set_index(0)
     all_features_df = gene_structure_feature_df.join(data_feature_df,lsuffix='_struc',rsuffix='_data').join(Kvalue_feature_df)
     # predict alpha
-    all_features = []
-    all_community_ids = []
-    all_alphas = []
-    for i in range(0,101,5):
-        alpha = str(i/100)
-        if alpha == "0.0" or alpha == '1.0':
-            alpha = alpha.split('.')[0]
-        # features
-        df = all_features_df.copy()
-        df['alpha'] = i/100
-        all_features.append(df.values)
-        all_community_ids.append(df.index)
-        all_alphas.append(df['alpha'])
-    all_features_arr = np.concatenate(all_features)
-    all_community_ids = np.concatenate(all_community_ids)
-    all_alphas = np.concatenate(all_alphas)
-    return all_features_arr,all_community_ids,all_alphas
+    # all_features = []
+    # all_community_ids = []
+    # all_alphas = []
+    # for i in range(0,101,5):
+    #     alpha = str(i/100)
+    #     if alpha == "0.0" or alpha == '1.0':
+    #         alpha = alpha.split('.')[0]
+    #     # features
+    #     df = all_features_df.copy()
+    #     df['alpha'] = i/100
+    #     all_features.append(df.values)
+    #     all_community_ids.append(df.index)
+    #     all_alphas.append(df['alpha'])
+    all_features_arr = all_features_df.values
+    all_community_ids = all_features_df.index
+    return all_features_arr,all_community_ids

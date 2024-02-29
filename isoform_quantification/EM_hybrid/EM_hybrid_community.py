@@ -367,7 +367,10 @@ def EM_algo_hybrid(isoform_len_dict,isoform_gene_dict,gene_isoforms_dict,SR_sam,
     print('Done in {} seconds at {}!'.format(duration,str(datetime.datetime.now())),flush=True)
     print('Extract features and predict best alpha...',flush=True)
     if config.alpha == 'adaptive':
-        predict_alpha(output_path)
+        if not Path(config.alpha_df_path).exists():
+            predict_alpha(output_path,num_SRs,num_LRs)
+        else:
+            print('Using alpha from '+str(config.alpha_df_path))
     else:
         config.alpha_df_path = None
         print('Using fixed alpha = '+str(config.alpha))

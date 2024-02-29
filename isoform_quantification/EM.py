@@ -259,4 +259,8 @@ def EM_hybrid(ref_file_path,short_read_alignment_file_path,long_read_alignment_f
         shutil.rmtree(f'{output_path}/temp/')
     except:
         pass    
+    try:
+        Path(f'{output_path}/read_len_dist_sm_dict').unlink()
+    except:
+        pass    
 
