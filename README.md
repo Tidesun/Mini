@@ -60,19 +60,17 @@ arguments:
 ```
 #### Results explanation 
 Isoform quantification abundance <br>
-`miniQuant_res/LR_EM_expression.out`
+`miniQuant_res/Isoform_abundance.out`
 ```
-Isoform	Gene	TPM	theta	community	community_num_LRs
-ENST00000002501.11	ENSG00000003249.15	28.213415252281333	0.753274566702212	20586	172
-ENST00000002829.8	ENSG00000001617.12	5.806563371373737	0.4597452669236426	4849	58
-ENST00000003912.7	ENSG00000001461.17	3.066295789453613e-07	4.14153389320385e-08	438	34
+Isoform	Gene	TPM
+ENST00000002501.11	ENSG00000003249.15	28.213415252281333
+ENST00000002829.8	ENSG00000001617.12	5.806563371373737
+ENST00000003912.7	ENSG00000001461.17	3.066295789453613e-07
 ```
 * `Isoform`: isoform ID
 * `Gene`: gene ID
 * `TPM`: isoform TPM
-* `theta`: isoform relative abundance to the gene expression
-* `community`: gene isoform cluster ID
-* `community_num_LRS`: number of LRs in gene isoform cluster
+
 ### 2. If quantify using short and long reads data in hybrid mode
 
 #### Step 0: use `Bowtie2` to map short reads data (e.g. paired end reads: `ENCFF892WVN.fastq.gz` and `ENCFF481BLH.fastq.gz`) to reference transcriptome (e.g. `gencode.v39.transcripts.fa`)
@@ -123,21 +121,17 @@ optional arguments
 ```
 #### Results explanation 
 Isoform quantification abundance <br>
-`miniQuant_res/SR_EM_expression.out`
+`miniQuant_res/Isoform_abundance.out`
 ```
-Isoform	Gene	TPM	Effective length	theta	community	community_num_SRs
-ENST00000003084.11	ENSG00000001626.17	0.02413423715032308	5834.082567393011	0.002168153673403896	2497	31
-ENST00000005257.7	ENSG00000006451.8	54.70210536985984	2551.0825673930112	0.9327052793487387	7944	1225
-ENST00000005386.8	ENSG00000005175.10	7.728764629572447	4103.082567393011	0.22204047920662903	6377	683
+Isoform	Gene	Effective length	TPM
+ENST00000003084.11	ENSG00000001626.17  5834.082567393011	0.02413423715032308
+ENST00000005257.7	ENSG00000006451.8	2551.0825673930112  54.70210536985984	
+ENST00000005386.8	ENSG00000005175.10	4103.082567393011	7.728764629572447
 ```
 * `Isoform`: isoform ID
 * `Gene`: gene ID
-* `TPM`: isoform TPM
 * `Effective length`: isoform effective length
-* `theta`: isoform relative abundance to the gene expression
-* `community`: gene isoform cluster ID
-* `community_num_SRS`: number of SRs in gene isoform cluster
-
+* `TPM`: isoform TPM
 ## Calculate K-value by GENCODE annotation
 ```
 source miniQuant/base/bin/activate
@@ -162,6 +156,6 @@ Kvalue<br>
 * `Gene`: gene ID
 * `Chr`: chr ID
 * `Num_isoforms`: number of isoforms in the gene
-* `SR_generalized_condition_number`: K value <br>
+* `Kvalue`: K value <br>
 
 *For gene that only consists of a very short exon, and that exon was filtered out by the strategy defined by `--sr_region_selection`, the k value will not be calculated and a `NA` value will be given.

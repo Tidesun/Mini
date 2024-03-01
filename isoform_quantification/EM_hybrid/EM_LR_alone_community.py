@@ -165,7 +165,7 @@ def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output
     pool.join()
     all_LR_TPM_df = pd.concat(all_LR_TPM_df)
     all_LR_TPM_df[['Isoform','Gene','TPM','theta','community','community_num_LRs']].to_csv(f'{output_path}/LR_EM_expression.out',sep='\t',index=False)
-    all_LR_TPM_df[['Isoform','Gene','TPM']].to_csv(f'{output_path}/Isoform_abundance.out',sep='\t',index=False)
+    all_LR_TPM_df[['Isoform','Gene','TPM']].sort_values(by=['Gene','Isoform']).to_csv(f'{output_path}/Isoform_abundance.out',sep='\t',index=False)
     all_iteration_df = pd.concat(all_iteration_df)
     all_iteration_df.to_csv(f'{output_path}/EM_iterations.tsv',sep='\t',index=False)
     duration = (time.time() - st)
