@@ -59,6 +59,27 @@ def generate_TrEESR_output(output_path,short_read_gene_matrix_dict,long_read_gen
                 f.write('{}\tNA\n'.format(gene_name))
                 
     gene_feature_dict = {}
+    with open(output_path+"/kvalues.out",'w') as f:
+        f.write('Gene\tChr\tNum_isoforms\tKvalue\n')
+        for (gene_name,chr_name) in list_of_all_genes_chrs:
+        # for chr_name in short_read_gene_matrix_dict:
+        #     for gene_name in short_read_gene_matrix_dict[chr_name]:
+            num_isoforms,num_exons,num_split_exons = gene_num_isoform_dict[chr_name][gene_name],raw_gene_num_exon_dict[chr_name][gene_name],gene_num_exon_dict[chr_name][gene_name]
+            SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = short_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+            LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = long_read_gene_matrix_dict[chr_name][gene_name]['condition_number']
+            SR_A_dim = short_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
+            LR_A_dim = long_read_gene_matrix_dict[chr_name][gene_name]['isoform_region_matrix'].shape
+            f.write('{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,SR_generalized_condition_number))
+            gene_feature_dict[gene_name] = [SR_generalized_condition_number,LR_generalized_condition_number]
+        for chr_name in removed_gene_isoform_dict:
+            for gene_name in removed_gene_isoform_dict[chr_name]:
+                info_dict = removed_gene_isoform_dict[chr_name][gene_name]['info']
+                num_isoforms,num_exons,num_split_exons = info_dict['num_isoforms'],info_dict['num_exons'],info_dict['num_split_exons']
+                SR_kvalue,SR_regular_condition_number,SR_generalized_condition_number,SR_singular_value_product = 'NA','NA','NA','NA'
+                LR_kvalue,LR_regular_condition_number,LR_generalized_condition_number,LR_singular_value_product = 'NA','NA','NA','NA'
+                SR_A_dim = 'NA'
+                LR_A_dim = 'NA'
+                f.write('{}\t{}\t{}\t{}\n'.format(gene_name,chr_name,num_isoforms,SR_generalized_condition_number))
     with open(output_path+"/kvalues_gene.out",'w') as f:
         f.write('Gene\tChr\tNum_isoforms\tNum_exons\tNum_split_exons\tSR_singular_value_product\tSR_k_value\tSR_regular_condition_number\tSR_generalized_condition_number\tSR_A_dim\tLR_singular_value_product\tLR_k_value\tLR_regular_condition_number\tLR_generalized_condition_number\tLR_A_dim\n')
         for (gene_name,chr_name) in list_of_all_genes_chrs:

@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 <b>OPTIONAL:</b>
 * short reads data in FASTQ format, example data can be downloaded from ENCODE [pair1](https://www.encodeproject.org/files/ENCFF892WVN/@@download/ENCFF892WVN.fastq.gz) and [pair2](https://www.encodeproject.org/files/ENCFF481BLH/@@download/ENCFF481BLH.fastq.gz)
-* reference transcriptome in FASTA foramt, can be downloaded from [GENCODE](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_39/gencode.v39.transcripts.fa.gz) for human
+* reference transcriptome in FASTA format, can be downloaded from [GENCODE](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_39/gencode.v39.transcripts.fa.gz) for human
 ## Isoform quantification by miniQuant
 
 ### 1. If quantify using long reads data alone
@@ -155,12 +155,9 @@ optional arguments:
 ```
 #### Results explanation 
 Kvalue<br>
-`miniQuant_kvalue/kvalues_gene.out`
+`miniQuant_kvalue/kvalues.out`
 ```
-Gene	Chr	Num_isoforms	Num_exons	Num_split_exons	SR_singular_value_product	SR_k_value	SR_regular_condition_number	SR_generalized_condition_number	SR_A_dim	LR_singular_value_product	LR_k_value	LR_regular_condition_number	LR_generalized_condition_number	LR_A_dim
-ENSG00000223972.5	1	2	9	11	0.07759138944429961	0.31776419461425737	1.4657688618887283	1.4657688618887283	(25, 2)	0.0289623007509571	0.4029484753578922	1.6748973224705064	1.6748973224705064	(70, 2)
-ENSG00000227232.5	1	1	11	11	0.05555555555555555	0.0	1.0	1.0	(18, 1)	0.015151515151515152	0.0	1.0	1.0	(66, 1)
-ENSG00000243485.5	1	2	5	5	0.21794494717703372	0.2241237856037605	1.2888653904388163	1.2888653904388163	(8, 2)	0.11902380714238082	0.38465409707499354	1.6251022315198094	1.6251022315198094	(13, 2)
+
 ```
 * `Gene`: gene ID
 * `Chr`: chr ID

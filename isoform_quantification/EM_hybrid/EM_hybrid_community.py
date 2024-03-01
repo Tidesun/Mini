@@ -310,6 +310,7 @@ def EM_manager(isoform_gene_dict,isoform_index_dict,eff_len_arr,output_df,output
     all_SR_TPM_df = pd.concat(all_SR_TPM_df)
     all_SR_TPM_df['TPM'] = all_SR_TPM_df['community_expression']/(all_SR_TPM_df['transcript_expression'].sum()) * all_SR_TPM_df['theta'] * 1e6
     all_SR_TPM_df[['Isoform','Gene','TPM','Effective length','theta','community','community_num_SRs']].to_csv(f'{output_path}/SR_EM_expression.out',sep='\t',index=False)
+    all_SR_TPM_df[['Isoform','Gene','Effective length','TPM']].to_csv(f'{output_path}/Isoform_abundance.out',sep='\t',index=False)
     all_iteration_df = pd.concat(all_iteration_df)
     all_iteration_df.to_csv(f'{output_path}/EM_iterations.tsv',sep='\t',index=False)
     duration = (time.time() - st)

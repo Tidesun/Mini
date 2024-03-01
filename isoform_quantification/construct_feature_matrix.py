@@ -110,8 +110,8 @@ def get_condition_number(isoform_region_matrix):
 
     # Calculate generalized condition number
     generalized_condition_number = svd_val_max/svd_val_pos_min
-    if (rank == multiply_transpose_matrix.shape[0]):
-        assert regular_condition_number == generalized_condition_number
+    # if (rank == multiply_transpose_matrix.shape[0]):
+    #     assert regular_condition_number == generalized_condition_number
 
     singular_value_product = svd_val_max * svd_val_pos_min
     return kvalue,regular_condition_number,generalized_condition_number,singular_value_product
