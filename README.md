@@ -26,7 +26,7 @@ pip install -r requirements.txt
 * reference transcriptome in FASTA foramt, can be downloaded from [GENCODE](https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_39/gencode.v39.transcripts.fa.gz) for human
 ## Isoform quantification by miniQuant
 
-### If quantify using long reads data alone
+### 1. If quantify using long reads data alone
 
 #### Step 0: use `minimap2` to map long reads data (e.g. `ENCFF714YOZ.fastq.gz`) to reference genome (e.g. `GRCh38.primary_assembly.genome.fa`)
 ##### For dRNA-ONT data
@@ -73,7 +73,7 @@ ENST00000003912.7	ENSG00000001461.17	3.066295789453613e-07	4.14153389320385e-08	
 * `theta`: isoform relative abundance to the gene expression
 * `community`: gene isoform cluster ID
 * `community_num_LRS`: number of LRs in gene isoform cluster
-### If quantify using short and long reads data in hybrid mode
+### 2. If quantify using short and long reads data in hybrid mode
 
 #### Step 0: use `Bowtie2` to map short reads data (e.g. paired end reads: `ENCFF892WVN.fastq.gz` and `ENCFF481BLH.fastq.gz`) to reference transcriptome (e.g. `gencode.v39.transcripts.fa`)
 ```
