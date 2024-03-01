@@ -151,7 +151,10 @@ optional arguments:
 Kvalue<br>
 `miniQuant_kvalue/kvalues.out`
 ```
-
+Gene	Chr	Num_isoforms	Kvalue
+ENSG00000223972.5	1	2	1.1813048155770713
+ENSG00000227232.5	1	1	1.0
+ENSG00000243485.5	1	2	1.2984494564116027
 ```
 * `Gene`: gene ID
 * `Chr`: chr ID
