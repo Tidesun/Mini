@@ -7,8 +7,8 @@
 ## Installation
 ```
 git clone https://github.com/Augroup/miniQuant.git
-wget -qO- https://miniquant.s3.us-east-2.amazonaws.com/pretrained_models.tar.gz | tar xvz
 cd miniQuant
+wget -qO- https://miniquant.s3.us-east-2.amazonaws.com/pretrained_models.tar.gz | tar xvz
 python -m venv base
 source base/bin/activate
 pip install --upgrade pip
@@ -17,7 +17,8 @@ pip install -r requirements.txt
 ## Isoform quantification by miniQuant
 ### Quantify using long reads data
 ```
-python isoform_quantification/main.py quantify \
+source miniQuant/base/bin/activate
+python miniQuant/isoform_quantification/main.py quantify \
 -gtf GTF_ANNOTATION_PATH \
 -lrsam LONG_READS_SAM_PATH \
 -t 1 \
@@ -36,7 +37,8 @@ arguments:
 
 ### Quantify using short and long reads data in hybrid mode
 ```
-python isoform_quantification/main.py quantify \
+source miniQuant/base/bin/activate
+python miniQuant/isoform_quantification/main.py quantify \
 -gtf GTF_ANNOTATION_PATH \
 -lrsam LONG_READS_SAM_PATH \
 -srsam SHORT_READS_SAM_PATH \
@@ -53,7 +55,8 @@ arguments:
   -srsam SHORT_READ_SAM_PATH, --short_read_sam_path SHORT_READ_SAM_PATH
                         The path of short read sam file mapping to reference transcriptome.
   --pretrained_model_path PRETRAINED_MODEL_PATH
-                        The pretrained model path to identify the alpha. default: cDNA-ONT. Can be one of the options [cDNA-ONT,dRNA-ONT,cDNA-PacBio] or file path of pretrained model.
+                        The pretrained model path to identify the alpha. default: cDNA-ONT. \n
+                        Can be one of the options [cDNA-ONT,dRNA-ONT,cDNA-PacBio] or file path of pretrained model.
   -t THREADS, --threads THREADS
                         Number of threads. Default is 1.
   -o OUTPUT_PATH, --output_path OUTPUT_PATH
@@ -78,7 +81,9 @@ optional arguments
 ```
 ## Calculate K-value
 ```
-usage: main.py cal_K_value [-h] -gtf GTF_ANNOTATION_PATH -o OUTPUT_PATH
+source miniQuant/base/bin/activate
+python miniQuant/isoform_quantification/main.py cal_K_value 
+-gtf GTF_ANNOTATION_PATH -o OUTPUT_PATH
                            [-lrsam LONG_READ_SAM_PATH] [-t THREADS]
                            [--sr_region_selection SR_REGION_SELECTION]
                            [--filtering FILTERING]
