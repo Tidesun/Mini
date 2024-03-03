@@ -99,7 +99,7 @@ def SR_external_quantification(short_read_gene_matrix_dict,gene_isoforms_length_
     external_bin_path = os.path.dirname(os.path.realpath(__file__))+'/external_bin'
     temp_dir = f'{output_dir}/temp/'
     Path(temp_dir).mkdir(exist_ok=True,parents=True)
-    if SR_quantification_option == 'Kallisto':
+    if SR_quantification_option == 'kallisto':
         expr_dict = quantify_by_kallisto(ref_annotation,ref_genome,temp_dir,external_bin_path,SR_fastq_list,SR_read_len,threads)
     elif SR_quantification_option == 'Salmon':
         expr_dict = quantify_by_salmon(ref_annotation,ref_genome,temp_dir,external_bin_path,SR_fastq_list,threads)

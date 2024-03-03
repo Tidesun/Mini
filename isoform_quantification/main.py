@@ -53,8 +53,8 @@ def parse_arguments():
     # optional_TransELS.add_argument('-sr_m2','--short_read_mate2_fastq', type=str, help="The path of short read mate 2 fastq file",default=None)
 
     # optional_TransELS.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
-    # optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
-    # # optional_TransELS.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
+    # optional_TransELS.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, kallisto,Salmon, RSEM] [default:kallisto]",default='kallisto')
+    # # optional_TransELS.add_argument('--kallisto_index', type=str, help="kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/kallistoIndex/gencode.v39.transcripts.clean.dedup.m')
     # optional_TransELS.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     # optional_TransELS.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     # optional_TransELS.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -88,8 +88,8 @@ def parse_arguments():
     optional_EM.add_argument('-sr_m2','--short_read_mate2_fastq', type=str, help="The path of short read mate 2 fastq file",default=None)
 
     optional_EM.add_argument('-ref_genome','--reference_genome', type=str, help="The path of reference genome file",default=None)
-    optional_EM.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, Kallisto,Salmon, RSEM] [default:Kallisto]",default='Kallisto')
-    # optional_EM.add_argument('--kallisto_index', type=str, help="Kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/KallistoIndex/gencode.v39.transcripts.clean.dedup.m')
+    optional_EM.add_argument('--SR_quantification_option', type=str, help="SR quantification option[Options: Mili, kallisto,Salmon, RSEM] [default:kallisto]",default='kallisto')
+    # optional_EM.add_argument('--kallisto_index', type=str, help="kallisto index",default='/fs/project/PCON0009/Yunhao/Project/Mili/Annotation/kallistoIndex/gencode.v39.transcripts.clean.dedup.m')
     optional_EM.add_argument('--alpha',type=str,default='adaptive', help="Alpha[default:adaptive]: SR and LR balance parameter")
     optional_EM.add_argument('--beta',type=str, default='1e-6',help="Beta[default:1e-6]: L2 regularization parameter")
     optional_EM.add_argument('--filtering',type=str,default='False', help="Whether the very short long reads will be filtered[default:False][True,False]")
@@ -113,7 +113,7 @@ def parse_arguments():
     optional_EM.add_argument('--EM_choice',type=str, default='LR',help="EM_choice[SR,LR,hybrid]")
     optional_EM.add_argument('--iter_theta',type=str, default='False',help="Whether use updated theta to re-calculate conditional prob [True,False]")
     optional_EM.add_argument('--kde_path',type=str, default='/fs/project/PCON0009/Au-scratch2/haoran/_projects/long_reads_rna_seq_simulator/models/kde_H1-hESC_dRNA',help="KDE model path")
-    optional_EM.add_argument('--eff_len_option',type=str, default='Kallisto',help="Calculation of effective length option [Kallisto,RSEM]")
+    optional_EM.add_argument('--eff_len_option',type=str, default='kallisto',help="Calculation of effective length option [kallisto,RSEM]")
     optional_EM.add_argument('--EM_SR_num_iters',type=int, default=200,help="Number of EM SR iterations")
     optional_EM.add_argument('--EM_output_frequency',type=int, default=200,help="Frequency(in itertations) of outputting EM results")
     optional_EM.add_argument('--pretrained_model_path',type=str, default='cDNA-ONT',help="The pretrained model path to identify the alpha")
@@ -196,8 +196,8 @@ def parse_arguments():
     #             beta = float(args.beta)
     #         except:
     #             raise Exception('Beta given is not numeric')
-    #     if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
-    #         raise Exception('SR_quantification_option is not valid.Options: [Mili, Kallisto,Salmon, RSEM]')
+    #     if args.SR_quantification_option not in ['Mili','kallisto','Salmon','RSEM']:
+    #         raise Exception('SR_quantification_option is not valid.Options: [Mili, kallisto,Salmon, RSEM]')
     #     if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
     #         args.multi_mapping_filtering = 'no_filtering'
     #     SR_fastq_list = []
@@ -240,8 +240,8 @@ def parse_arguments():
                 beta = float(args.beta)
             except:
                 raise Exception('Beta given is not numeric')
-        # if args.SR_quantification_option not in ['Mili','Kallisto','Salmon','RSEM']:
-        #     raise Exception('SR_quantification_option is not valid.Options: [Mili, Kallisto,Salmon, RSEM]')
+        # if args.SR_quantification_option not in ['Mili','kallisto','Salmon','RSEM']:
+        #     raise Exception('SR_quantification_option is not valid.Options: [Mili, kallisto,Salmon, RSEM]')
         if (args.multi_mapping_filtering is None) or (not args.multi_mapping_filtering in ['unique_only','best']):
             args.multi_mapping_filtering = 'no_filtering'
         SR_fastq_list = []

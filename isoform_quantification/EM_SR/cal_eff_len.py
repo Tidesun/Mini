@@ -24,13 +24,13 @@ def get_eff_len_rsem(isoform_len,fraglen,fragsd):
     if (eff_len < 1):
         eff_len = 1
     return eff_len
-def get_eff_len_dict(SR_sam,mean_f_len,std_f_len,option='Kallisto'):
+def get_eff_len_dict(SR_sam,mean_f_len,std_f_len,option='kallisto'):
     eff_len_dict = {}
     with pysam.AlignmentFile(SR_sam, "r") as f:
         for isoform,isoform_len in zip(f.references,f.lengths):
             if '|' in isoform:
                 isoform = isoform.split('|')[0]
-            if option == 'Kallisto':
+            if option == 'kallisto':
                 eff_len_dict[isoform] = get_eff_len_kallisto(isoform_len,mean_f_len,std_f_len)
             elif option == 'RSEM':
                 eff_len_dict[isoform] = get_eff_len_rsem(isoform_len,mean_f_len,std_f_len)
