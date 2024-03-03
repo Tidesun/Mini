@@ -37,6 +37,7 @@ pip install -r requirements.txt
 * short reads alignment data mapped to reference transcriptome in SAM format, example data can be found in `miniQuant/example/SR.sam`
 <br>
 <b>Sequence alignment recommendation:</b>
+
 #### use `minimap2` to map long reads data (e.g. `ENCFF714YOZ.fastq.gz`) to reference genome (e.g. `GRCh38.primary_assembly.genome.fa`)
 ##### For dRNA-ONT data
 ```
