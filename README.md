@@ -33,7 +33,9 @@ pip install -r requirements.txt
 * long reads alignment data mapped to reference genome in SAM format, example data can be found in `miniQuant/example/LR.sam`
 * gene isoform annotation in GTF format, example data can be found in `miniQuant/example/annotation.gtf`
 <br>
+
 <b>Optional:</b>
+
 * short reads alignment data mapped to reference transcriptome in SAM format, example data can be found in `miniQuant/example/SR.sam`
 <br>
 <b>Sequence alignment recommendation:</b>
