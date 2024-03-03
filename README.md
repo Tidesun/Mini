@@ -174,7 +174,7 @@ optional arguments:
                         [default:read_length][read_length,num_exons]
 ```
 #### Results explanation 
-Kvalue<br>
+K-value for each gene<br>
 `miniQuant_kvalue/kvalues.out`
 ```
 Gene	Chr	Num_isoforms	Kvalue
